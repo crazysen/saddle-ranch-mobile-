@@ -276,6 +276,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           autocorrect: false,
+                          enableSuggestions: false,
                           style: GoogleFonts.inter(color: AppleColors.textPrimary),
                           decoration: const InputDecoration(
                             hintText: 'name@example.com',
@@ -306,6 +307,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
+                          autocorrect: false,
+                          enableSuggestions: false,
                           style: GoogleFonts.inter(color: AppleColors.textPrimary),
                           decoration: InputDecoration(
                             hintText: 'Enter your password',

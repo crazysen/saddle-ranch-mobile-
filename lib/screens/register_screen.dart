@@ -134,6 +134,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _nameController,
                   textCapitalization: TextCapitalization.words,
+                  autocorrect: false,
+                  enableSuggestions: false,
                   style: GoogleFonts.inter(color: AppColors.primaryText),
                   decoration: const InputDecoration(
                     hintText: 'Juan Dela Cruz',
@@ -162,6 +164,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
+                  enableSuggestions: false,
                   style: GoogleFonts.inter(color: AppColors.primaryText),
                   decoration: const InputDecoration(
                     hintText: 'name@example.com',
@@ -192,6 +195,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
+                  autocorrect: false,
+                  enableSuggestions: false,
                   style: GoogleFonts.inter(color: AppColors.primaryText),
                   decoration: const InputDecoration(
                     hintText: '09171234567',
@@ -213,6 +218,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  autocorrect: false,
+                  enableSuggestions: false,
                   style: GoogleFonts.inter(color: AppColors.primaryText),
                   decoration: InputDecoration(
                     hintText: 'Create a password (min 6 chars)',
@@ -253,6 +260,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
+                  autocorrect: false,
+                  enableSuggestions: false,
                   style: GoogleFonts.inter(color: AppColors.primaryText),
                   decoration: InputDecoration(
                     hintText: 'Re-enter your password',
