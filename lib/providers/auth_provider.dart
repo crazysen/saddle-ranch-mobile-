@@ -82,6 +82,22 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
+    final cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail == 'customer@saddleranch.ph') {
+      return loginAsDemo(
+        email: 'customer@saddleranch.ph',
+        fullName: 'Juan Dela Cruz',
+        phone: '09171234567',
+      );
+    }
+    if (cleanEmail == 'dev@saddleranch.ph') {
+      return loginAsDemo(
+        email: 'dev@saddleranch.ph',
+        fullName: 'Dev Tester',
+        phone: '09998887766',
+      );
+    }
+
     _busy = true;
     _error = null;
     notifyListeners();
@@ -110,6 +126,33 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _error = 'Unable to connect to Saddle Ranch server. Please try again.';
       return false;
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Instant demo account login without triggering Render network API calls
+  Future<bool> loginAsDemo({
+    required String email,
+    required String fullName,
+    String? phone,
+  }) async {
+    _busy = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final user = AppUser(
+        email: email,
+        fullName: fullName,
+        phone: phone,
+        profileComplete: true,
+      );
+      _user = user;
+      await _persistLocalUserData(user);
+      _error = null;
+      return true;
     } finally {
       _busy = false;
       notifyListeners();

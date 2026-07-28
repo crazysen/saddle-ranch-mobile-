@@ -27,31 +27,29 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _fillCustomerDemo() {
+  Future<void> _fillCustomerDemo() async {
     AppleTheme.hapticFeedback();
     setState(() {
       _emailController.text = 'customer@saddleranch.ph';
       _passwordController.text = 'customer123';
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Auto-filled Customer Demo credentials (customer@saddleranch.ph)'),
-        duration: Duration(seconds: 1),
-      ),
+    await context.read<AuthProvider>().loginAsDemo(
+      email: 'customer@saddleranch.ph',
+      fullName: 'Juan Dela Cruz',
+      phone: '09171234567',
     );
   }
 
-  void _fillDeveloperDemo() {
+  Future<void> _fillDeveloperDemo() async {
     AppleTheme.hapticFeedback();
     setState(() {
       _emailController.text = 'dev@saddleranch.ph';
       _passwordController.text = 'devpass123';
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Auto-filled Developer Access credentials (dev@saddleranch.ph)'),
-        duration: Duration(seconds: 1),
-      ),
+    await context.read<AuthProvider>().loginAsDemo(
+      email: 'dev@saddleranch.ph',
+      fullName: 'Dev Tester',
+      phone: '09998887766',
     );
   }
 
@@ -300,8 +298,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.g_mobiledata, size: 28, color: AppleColors.textPrimary),
-                        const SizedBox(width: 8),
+                        Image.network(
+                          'https://pngimg.com/uploads/google/google_PNG19635.png',
+                          height: 22,
+                          width: 22,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.g_mobiledata,
+                            size: 28,
+                            color: AppleColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
                         Text(
                           'Continue with Google',
                           style: GoogleFonts.inter(
