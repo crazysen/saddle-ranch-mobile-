@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_user.dart';
+import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   static const _keyLoggedIn = 'auth_logged_in';
@@ -11,6 +12,10 @@ class AuthProvider extends ChangeNotifier {
   static const _keyFullName = 'auth_full_name';
   static const _keyPhone = 'auth_phone';
   static const _keyProfileComplete = 'auth_profile_complete';
+
+  final ApiService _apiService;
+
+  AuthProvider({ApiService? apiService}) : _apiService = apiService ?? ApiService();
 
   AppUser? _user;
   bool _loading = true;
@@ -23,15 +28,33 @@ class AuthProvider extends ChangeNotifier {
   bool get busy => _busy;
   String? get error => _error;
   bool get isLoggedIn => _user != null;
-  bool get needsProfileSetup =>
-      _user != null && !_user!.profileComplete;
+  bool get needsProfileSetup => _user != null && !_user!.profileComplete;
 
   Future<void> bootstrap() async {
     _loading = true;
+    _error = null;
     notifyListeners();
 
     try {
       await _initGoogle();
+
+      // Check if Sanctum token exists in secure storage first
+      final token = await _apiService.getToken();
+      if (token != null && token.isNotEmpty) {
+        try {
+          final profile = await _apiService.getProfile();
+          _user = profile;
+          await _persistLocalUserData(profile);
+          _loading = false;
+          notifyListeners();
+          return;
+        } catch (_) {
+          // Invalid or expired token
+          await _apiService.clearToken();
+        }
+      }
+
+      // Fallback to local shared preferences if previously saved
       final prefs = await SharedPreferences.getInstance();
       final loggedIn = prefs.getBool(_keyLoggedIn) ?? false;
       if (loggedIn) {
@@ -47,9 +70,95 @@ class AuthProvider extends ChangeNotifier {
         }
       }
     } catch (_) {
-      // Keep going with empty session.
+      // Keep going with guest session.
     } finally {
       _loading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Sign in with email and password via Laravel Sanctum REST API
+  Future<bool> loginWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    _busy = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.login(email: email, password: password);
+      
+      // Extract user from API response or fetch profile
+      AppUser user;
+      if (response['user'] is Map<String, dynamic>) {
+        user = AppUser.fromJson(response['user'] as Map<String, dynamic>);
+      } else if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>)['user'] is Map<String, dynamic>) {
+        user = AppUser.fromJson((response['data'] as Map<String, dynamic>)['user'] as Map<String, dynamic>);
+      } else {
+        user = await _apiService.getProfile();
+      }
+
+      _user = user;
+      await _persistLocalUserData(user);
+      _error = null;
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = 'Unable to connect to Saddle Ranch server. Please try again.';
+      return false;
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Register customer account via Laravel Sanctum REST API
+  Future<bool> register({
+    required String name,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    String? phone,
+  }) async {
+    _busy = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.register(
+        name: name,
+        email: email,
+        password: password,
+        passwordConfirmation: passwordConfirmation,
+        phone: phone,
+      );
+
+      AppUser user;
+      if (response['user'] is Map<String, dynamic>) {
+        user = AppUser.fromJson(response['user'] as Map<String, dynamic>);
+      } else if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>)['user'] is Map<String, dynamic>) {
+        user = AppUser.fromJson((response['data'] as Map<String, dynamic>)['user'] as Map<String, dynamic>);
+      } else {
+        user = await _apiService.getProfile();
+      }
+
+      _user = user;
+      await _persistLocalUserData(user);
+      _error = null;
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = 'Registration failed. Please check your connection and try again.';
+      return false;
+    } finally {
+      _busy = false;
       notifyListeners();
     }
   }
@@ -63,8 +172,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sign in with Gmail / Google. Falls back to a demo session if Google
-  /// OAuth is not configured yet (frontend testing).
+  /// Google Sign-In helper
   Future<bool> signInWithGoogle({bool allowDemoFallback = true}) async {
     _busy = true;
     _error = null;
@@ -85,7 +193,6 @@ class AuthProvider extends ChangeNotifier {
             _error = 'Google sign-in failed. Check OAuth setup.';
             return false;
           }
-          // Frontend placeholder until Google Cloud client IDs are added.
           await _persistNewGoogleUser(
             email: 'guest@gmail.com',
             displayName: '',
@@ -132,19 +239,25 @@ class AuthProvider extends ChangeNotifier {
       profileComplete: alreadyComplete,
     );
 
+    await _persistLocalUserData(_user!);
+  }
+
+  Future<void> _persistLocalUserData(AppUser user) async {
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyLoggedIn, true);
-    await prefs.setString(_keyEmail, email);
-    if (photoUrl != null) {
-      await prefs.setString(_keyPhoto, photoUrl);
+    await prefs.setString(_keyEmail, user.email);
+    if (user.photoUrl != null) {
+      await prefs.setString(_keyPhoto, user.photoUrl!);
     } else {
       await prefs.remove(_keyPhoto);
     }
-    if (!alreadyComplete) {
-      await prefs.setBool(_keyProfileComplete, false);
-      if (name.isNotEmpty) {
-        await prefs.setString(_keyFullName, name);
-      }
+    await prefs.setString(_keyFullName, user.fullName);
+    if (user.phone != null) {
+      await prefs.setString(_keyPhone, user.phone!);
+    } else {
+      await prefs.remove(_keyPhone);
     }
+    await prefs.setBool(_keyProfileComplete, user.profileComplete);
   }
 
   Future<void> completeProfile({
@@ -163,20 +276,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
       final updated = _user!.copyWith(
         fullName: name,
         phone: phone?.trim().isEmpty == true ? null : phone?.trim(),
         profileComplete: true,
       );
       _user = updated;
-      await prefs.setString(_keyFullName, updated.fullName);
-      if (updated.phone != null) {
-        await prefs.setString(_keyPhone, updated.phone!);
-      } else {
-        await prefs.remove(_keyPhone);
-      }
-      await prefs.setBool(_keyProfileComplete, true);
+      await _persistLocalUserData(updated);
       _error = null;
     } finally {
       _busy = false;
@@ -191,10 +297,10 @@ class AuthProvider extends ChangeNotifier {
       try {
         await GoogleSignIn.instance.signOut();
       } catch (_) {}
+      await _apiService.logout();
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyLoggedIn, false);
-      // Keep profile fields so returning Google user can be recognized,
-      // but require login again. Clear session user.
       _user = null;
       _error = null;
     } finally {
@@ -203,11 +309,11 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Clears everything — useful to retest first-time onboarding.
   Future<void> clearLocalAccount() async {
     try {
       await GoogleSignIn.instance.signOut();
     } catch (_) {}
+    await _apiService.clearToken();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyLoggedIn);
     await prefs.remove(_keyEmail);

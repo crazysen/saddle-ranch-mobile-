@@ -46,4 +46,18 @@ class AppUser {
       profileComplete: data['profileComplete'] == '1',
     );
   }
+
+  factory AppUser.fromJson(Map<String, dynamic> json) {
+    final name = (json['name'] ?? json['full_name'] ?? json['fullName'] ?? '').toString();
+    final email = (json['email'] ?? '').toString();
+    final phone = json['phone']?.toString();
+    final photo = (json['photo_url'] ?? json['avatar'] ?? json['photoUrl'])?.toString();
+    return AppUser(
+      email: email,
+      fullName: name,
+      phone: phone,
+      photoUrl: photo,
+      profileComplete: name.isNotEmpty,
+    );
+  }
 }

@@ -1,25 +1,23 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-
 class ApiConfig {
-  /// Override when pointing at a deployed Laravel host.
-  static const String? overrideBaseUrl = null;
+  /// Default Render backend base URL
+  static const String defaultRenderUrl = 'https://saddle-ranch-api.onrender.com/api/v1';
+
+  /// Override base URL for custom deployment or testing.
+  static String? overrideBaseUrl;
 
   static String get baseUrl {
-    if (overrideBaseUrl != null) return overrideBaseUrl!;
-
-    // Android emulator reaches host machine via 10.0.2.2
-    if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:8000/api/v1';
+    if (overrideBaseUrl != null && overrideBaseUrl!.isNotEmpty) {
+      return overrideBaseUrl!;
     }
-
-    return 'http://127.0.0.1:8000/api/v1';
+    return defaultRenderUrl;
   }
 
   static String get products => '$baseUrl/products';
   static String get banners => '$baseUrl/banners';
   static String get orders => '$baseUrl/orders';
   static String get login => '$baseUrl/auth/login';
+  static String get register => '$baseUrl/auth/register';
+  static String get me => '$baseUrl/auth/me';
+  static String get logout => '$baseUrl/auth/logout';
   static String get validateVoucher => '$baseUrl/vouchers/validate';
 }
