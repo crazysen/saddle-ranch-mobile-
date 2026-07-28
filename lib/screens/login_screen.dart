@@ -1,64 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:video_player/video_player.dart';
 
 import '../providers/auth_provider.dart';
 import '../theme/apple_theme.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
-
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  late VideoPlayerController _videoController;
-  bool _videoInitialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initVideoPlayer();
-  }
-
-  Future<void> _initVideoPlayer() async {
-    try {
-      _videoController = VideoPlayerController.asset('assets/videos/landing-video.mp4');
-      _videoController.setVolume(0); // Mute for browser/device autoplay compliance
-      await _videoController.initialize();
-      await _videoController.setLooping(true);
-      await _videoController.play();
-      if (mounted) {
-        setState(() => _videoInitialized = true);
-      }
-    } catch (_) {
-      try {
-        // Web asset path fallback
-        _videoController = VideoPlayerController.asset('videos/landing-video.mp4');
-        _videoController.setVolume(0);
-        await _videoController.initialize();
-        await _videoController.setLooping(true);
-        await _videoController.play();
-        if (mounted) {
-          setState(() => _videoInitialized = true);
-        }
-      } catch (_) {
-        if (mounted) {
-          setState(() => _videoInitialized = false);
-        }
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    if (_videoInitialized) {
-      _videoController.dispose();
-    }
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: AppleColors.scaffoldBackground,
       body: Stack(
         children: [
-          // Top Hero Area: Ambient Video Background
+          // Top Hero Area: Hero Frame Image Background (frame_005.png)
           Positioned.fill(
             child: Column(
               children: [
@@ -77,18 +25,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      if (_videoInitialized && _videoController.value.isInitialized)
-                        FittedBox(
-                          fit: BoxFit.cover,
-                          clipBehavior: Clip.hardEdge,
-                          child: SizedBox(
-                            width: _videoController.value.size.width,
-                            height: _videoController.value.size.height,
-                            child: VideoPlayer(_videoController),
-                          ),
-                        )
-                      else
-                        Container(
+                      Image.asset(
+                        'assets/images/frame_005.png',
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        errorBuilder: (context, error, stackTrace) => Container(
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
                               colors: [Color(0xFF3F2000), AppleColors.primaryAccent],
@@ -124,6 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                         ),
+                      ),
 
                       // Gradient overlay for smooth contrast transition
                       Positioned.fill(
@@ -133,9 +75,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withValues(alpha: 0.2),
+                                Colors.black.withValues(alpha: 0.15),
                                 Colors.transparent,
-                                Colors.black.withValues(alpha: 0.35),
+                                Colors.black.withValues(alpha: 0.3),
                               ],
                               stops: const [0.0, 0.5, 1.0],
                             ),
@@ -172,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -230,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
 
-                      // Only Authentication CTA: Continue with Google (using local Google PNG asset)
+                      // Only Authentication CTA: Continue with Google (using local google_logo.png asset)
                       SizedBox(
                         height: 52,
                         child: OutlinedButton(
