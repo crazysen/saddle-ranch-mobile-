@@ -172,7 +172,7 @@ class LoginScreen extends StatelessWidget {
                         ),
                       ],
 
-                      // Only Authentication CTA: Continue with Google (using local google_logo.png asset)
+                      // Only Authentication CTA: Continue with Google (using google_logo.png with network fallback)
                       SizedBox(
                         height: 52,
                         child: OutlinedButton(
@@ -207,10 +207,16 @@ class LoginScreen extends StatelessWidget {
                                       height: 22,
                                       width: 22,
                                       fit: BoxFit.contain,
-                                      errorBuilder: (context, error, stackTrace) => const Icon(
-                                        Icons.g_mobiledata,
-                                        size: 28,
-                                        color: AppleColors.textPrimary,
+                                      errorBuilder: (context, error, stackTrace) => Image.network(
+                                        'https://pngimg.com/uploads/google/google_PNG19635.png',
+                                        height: 22,
+                                        width: 22,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) => const Icon(
+                                          Icons.g_mobiledata,
+                                          size: 28,
+                                          color: AppleColors.textPrimary,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
