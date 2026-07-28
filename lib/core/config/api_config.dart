@@ -1,4 +1,7 @@
 class ApiConfig {
+  /// Toggle bypassBackend to true for zero-latency UI development & testing without waiting for backend/Render API timeouts.
+  static bool bypassBackend = true;
+
   /// Default Render backend base URL
   static const String defaultRenderUrl = 'https://saddle-ranch-api.onrender.com/api/v1';
 

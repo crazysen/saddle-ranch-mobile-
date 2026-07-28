@@ -74,6 +74,20 @@ class ApiService {
     required String email,
     required String password,
   }) async {
+    if (ApiConfig.bypassBackend) {
+      final mockToken = 'mock_sanctum_token_${DateTime.now().millisecondsSinceEpoch}';
+      await saveToken(mockToken);
+      return {
+        'token': mockToken,
+        'token_type': 'Bearer',
+        'user': {
+          'name': email.split('@').first.toUpperCase(),
+          'email': email.trim(),
+          'phone': '09171234567',
+        },
+      };
+    }
+
     final headers = await _buildHeaders();
     final response = await _client.post(
       Uri.parse(ApiConfig.login),
@@ -108,6 +122,20 @@ class ApiService {
     required String passwordConfirmation,
     String? phone,
   }) async {
+    if (ApiConfig.bypassBackend) {
+      final mockToken = 'mock_sanctum_token_${DateTime.now().millisecondsSinceEpoch}';
+      await saveToken(mockToken);
+      return {
+        'token': mockToken,
+        'token_type': 'Bearer',
+        'user': {
+          'name': name.trim(),
+          'email': email.trim(),
+          'phone': phone?.trim(),
+        },
+      };
+    }
+
     final headers = await _buildHeaders();
     final response = await _client.post(
       Uri.parse(ApiConfig.register),
@@ -139,6 +167,15 @@ class ApiService {
 
   /// GET /auth/me - Fetch authenticated user profile details
   Future<AppUser> getProfile() async {
+    if (ApiConfig.bypassBackend) {
+      return const AppUser(
+        email: 'customer@saddleranch.ph',
+        fullName: 'Juan Dela Cruz',
+        phone: '09171234567',
+        profileComplete: true,
+      );
+    }
+
     final headers = await _buildHeaders();
     final response = await _client.get(
       Uri.parse(ApiConfig.me),
@@ -159,6 +196,11 @@ class ApiService {
 
   /// POST /auth/logout - Revoke Sanctum Bearer token
   Future<void> logout() async {
+    if (ApiConfig.bypassBackend) {
+      await clearToken();
+      return;
+    }
+
     try {
       final headers = await _buildHeaders();
       await _client.post(
@@ -174,6 +216,10 @@ class ApiService {
 
   /// Fetch menu products
   Future<List<Product>> fetchProducts() async {
+    if (ApiConfig.bypassBackend) {
+      return _fallbackProducts;
+    }
+
     try {
       final headers = await _buildHeaders();
       final response = await _client.get(
@@ -201,6 +247,10 @@ class ApiService {
 
   /// Fetch promotional banners
   Future<List<PromoBanner>> fetchBanners() async {
+    if (ApiConfig.bypassBackend) {
+      return _fallbackBanners;
+    }
+
     try {
       final headers = await _buildHeaders();
       final response = await _client.get(
@@ -238,6 +288,25 @@ class ApiService {
     String? deliveryAddress,
     String? deliveryNotes,
   }) async {
+    if (ApiConfig.bypassBackend) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      double total = 0;
+      for (final item in items) {
+        final price = (item['price'] as num?)?.toDouble() ?? 0;
+        final qty = (item['quantity'] as num?)?.toInt() ?? 1;
+        total += price * qty;
+      }
+      return OrderResult(
+        id: now % 100000,
+        orderNumber: 'SR-${(now % 10000).toString().padLeft(4, '0')}',
+        status: 'pending',
+        orderType: orderType,
+        paymentMethod: paymentMethod,
+        totalAmount: total,
+        tableNumber: tableNumber,
+      );
+    }
+
     final headers = await _buildHeaders();
     final response = await _client.post(
       Uri.parse(ApiConfig.orders),
