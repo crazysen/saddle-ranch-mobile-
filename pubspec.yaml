@@ -57,6 +57,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/videos/landing-video.mp4
+    - assets/images/google_logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
