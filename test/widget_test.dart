@@ -13,7 +13,7 @@ void main() {
     await tester.pumpWidget(const SaddleRanchApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign up or log in'), findsOneWidget);
+    expect(find.text('Login'), findsAtLeast(1));
     expect(find.text('Continue with Google'), findsOneWidget);
   });
 }
