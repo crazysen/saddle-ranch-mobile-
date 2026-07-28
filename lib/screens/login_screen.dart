@@ -191,6 +191,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             keyboardType: TextInputType.emailAddress,
             autocorrect: false,
             enableSuggestions: false,
+            enableInteractiveSelection: true,
+            readOnly: false,
             style: GoogleFonts.inter(color: _darkText, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'customer@saddleranch.ph',
@@ -219,6 +221,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             obscureText: _loginObscurePassword,
             autocorrect: false,
             enableSuggestions: false,
+            enableInteractiveSelection: true,
+            readOnly: false,
             style: GoogleFonts.inter(color: _darkText, fontSize: 14),
             decoration: InputDecoration(
               hintText: '••••••••',
@@ -535,6 +539,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             textCapitalization: TextCapitalization.words,
             autocorrect: false,
             enableSuggestions: false,
+            enableInteractiveSelection: true,
+            readOnly: false,
             style: GoogleFonts.inter(color: _darkText, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Juan Dela Cruz',
@@ -563,6 +569,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             keyboardType: TextInputType.emailAddress,
             autocorrect: false,
             enableSuggestions: false,
+            enableInteractiveSelection: true,
+            readOnly: false,
             style: GoogleFonts.inter(color: _darkText, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'name@example.com',
@@ -594,6 +602,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             keyboardType: TextInputType.phone,
             autocorrect: false,
             enableSuggestions: false,
+            enableInteractiveSelection: true,
+            readOnly: false,
             style: GoogleFonts.inter(color: _darkText, fontSize: 14),
             decoration: InputDecoration(
               hintText: '09171234567 (Optional)',
@@ -616,6 +626,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             obscureText: _signUpObscurePassword,
             autocorrect: false,
             enableSuggestions: false,
+            enableInteractiveSelection: true,
+            readOnly: false,
             style: GoogleFonts.inter(color: _darkText, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Create a password (min 6 chars)',
@@ -658,6 +670,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             obscureText: _signUpObscureConfirmPassword,
             autocorrect: false,
             enableSuggestions: false,
+            enableInteractiveSelection: true,
+            readOnly: false,
             style: GoogleFonts.inter(color: _darkText, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Re-enter your password',
