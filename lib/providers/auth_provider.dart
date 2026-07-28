@@ -237,8 +237,8 @@ class AuthProvider extends ChangeNotifier {
             return false;
           }
           await _persistNewGoogleUser(
-            email: 'guest@gmail.com',
-            displayName: '',
+            email: 'customer@saddleranch.ph',
+            displayName: 'Juan Dela Cruz',
             photoUrl: null,
           );
           return true;
@@ -251,8 +251,8 @@ class AuthProvider extends ChangeNotifier {
       }
 
       await _persistNewGoogleUser(
-        email: 'guest@gmail.com',
-        displayName: '',
+        email: 'customer@saddleranch.ph',
+        displayName: 'Juan Dela Cruz',
         photoUrl: null,
       );
       return true;
@@ -279,7 +279,7 @@ class AuthProvider extends ChangeNotifier {
       photoUrl: photoUrl,
       fullName: alreadyComplete ? existingName : name,
       phone: alreadyComplete ? prefs.getString(_keyPhone) : null,
-      profileComplete: alreadyComplete,
+      profileComplete: true,
     );
 
     await _persistLocalUserData(_user!);
@@ -333,19 +333,30 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Instant signOut - clears all local auth state and notifies listeners
   Future<void> signOut() async {
-    _busy = true;
-    notifyListeners();
+    _busy = false;
+    _error = null;
+
     try {
       try {
         await GoogleSignIn.instance.signOut();
       } catch (_) {}
-      await _apiService.logout();
+      try {
+        await _apiService.clearToken();
+      } catch (_) {}
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_keyLoggedIn, false);
+      await prefs.remove(_keyLoggedIn);
+      await prefs.remove(_keyEmail);
+      await prefs.remove(_keyPhoto);
+      await prefs.remove(_keyFullName);
+      await prefs.remove(_keyPhone);
+      await prefs.remove(_keyProfileComplete);
+
       _user = null;
-      _error = null;
+    } catch (_) {
+      _user = null;
     } finally {
       _busy = false;
       notifyListeners();
@@ -353,18 +364,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> clearLocalAccount() async {
-    try {
-      await GoogleSignIn.instance.signOut();
-    } catch (_) {}
-    await _apiService.clearToken();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyLoggedIn);
-    await prefs.remove(_keyEmail);
-    await prefs.remove(_keyPhoto);
-    await prefs.remove(_keyFullName);
-    await prefs.remove(_keyPhone);
-    await prefs.remove(_keyProfileComplete);
-    _user = null;
-    notifyListeners();
+    await signOut();
   }
 }

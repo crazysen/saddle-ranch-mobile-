@@ -28,6 +28,16 @@ class AccountScreen extends StatelessWidget {
         ),
         backgroundColor: AppleColors.pureWhite,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.logOut, color: AppleColors.danger, size: 20),
+            tooltip: 'Log Out',
+            onPressed: () {
+              AppleTheme.hapticFeedback();
+              context.read<AuthProvider>().signOut();
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -128,22 +138,13 @@ class AccountScreen extends StatelessWidget {
 
           // Prominent Apple-styled Log Out Button
           SizedBox(
+            width: double.infinity,
             height: 52,
             child: ElevatedButton.icon(
-              onPressed: auth.busy
-                  ? null
-                  : () async {
-                      AppleTheme.hapticFeedback();
-                      await context.read<AuthProvider>().signOut();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Successfully logged out'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
-                      }
-                    },
+              onPressed: () {
+                AppleTheme.hapticFeedback();
+                context.read<AuthProvider>().signOut();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppleColors.danger,
                 foregroundColor: Colors.white,
@@ -152,13 +153,7 @@ class AccountScreen extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              icon: auth.busy
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(LucideIcons.logOut, size: 18),
+              icon: const Icon(LucideIcons.logOut, size: 18),
               label: Text(
                 'Log Out',
                 style: GoogleFonts.inter(
@@ -173,56 +168,54 @@ class AccountScreen extends StatelessWidget {
           // Reset testing button
           Center(
             child: TextButton.icon(
-              onPressed: auth.busy
-                  ? null
-                  : () async {
-                      AppleTheme.hapticFeedback();
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          backgroundColor: AppleColors.pureWhite,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          title: Text(
-                            'Reset account session?',
-                            style: GoogleFonts.domine(
-                              color: AppleColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          content: Text(
-                            'This clears saved account session credentials on this device.',
-                            style: GoogleFonts.inter(
-                              color: AppleColors.mutedText,
-                              fontSize: 14,
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: Text(
-                                'Cancel',
-                                style: GoogleFonts.inter(color: AppleColors.mutedText),
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppleColors.danger,
-                              ),
-                              child: Text(
-                                'Reset',
-                                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
+              onPressed: () async {
+                AppleTheme.hapticFeedback();
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: AppleColors.pureWhite,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    title: Text(
+                      'Reset account session?',
+                      style: GoogleFonts.domine(
+                        color: AppleColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    content: Text(
+                      'This clears saved account session credentials on this device.',
+                      style: GoogleFonts.inter(
+                        color: AppleColors.mutedText,
+                        fontSize: 14,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.inter(color: AppleColors.mutedText),
                         ),
-                      );
-                      if (confirm == true && context.mounted) {
-                        await context.read<AuthProvider>().clearLocalAccount();
-                      }
-                    },
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppleColors.danger,
+                        ),
+                        child: Text(
+                          'Reset',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true && context.mounted) {
+                  context.read<AuthProvider>().clearLocalAccount();
+                }
+              },
               icon: const Icon(LucideIcons.refreshCw, size: 14, color: AppleColors.mutedText),
               label: Text(
                 'Reset test state',
