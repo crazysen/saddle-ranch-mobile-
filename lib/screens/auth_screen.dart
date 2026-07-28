@@ -108,22 +108,6 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  void _fillCustomerDemo() {
-    AppleTheme.hapticFeedback();
-    setState(() {
-      _loginEmailController.text = 'customer@saddleranch.ph';
-      _loginPasswordController.text = 'customer123';
-    });
-  }
-
-  void _fillDevAccess() {
-    AppleTheme.hapticFeedback();
-    setState(() {
-      _loginEmailController.text = 'dev@saddleranch.ph';
-      _loginPasswordController.text = 'devpass123';
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -577,71 +561,6 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Quick-Fill Demo Chips
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _inputBackground,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    GestureDetector(
-                      onTap: _fillCustomerDemo,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _cardBorder),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(LucideIcons.user, size: 14, color: _primaryOrange),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Customer Demo',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _darkText,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: _fillDevAccess,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _cardBorder),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(LucideIcons.code2, size: 14, color: _primaryOrange),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Dev Access',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _darkText,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ],
