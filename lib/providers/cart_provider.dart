@@ -12,6 +12,8 @@ class CartProvider extends ChangeNotifier {
 
   double get subtotal => _items.fold(0, (sum, item) => sum + item.subtotal);
 
+  double get totalAmount => subtotal;
+
   bool get isEmpty => _items.isEmpty;
 
   void add(Product product, {int quantity = 1}) {

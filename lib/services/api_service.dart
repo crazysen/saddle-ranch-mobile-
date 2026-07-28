@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/config/api_config.dart';
+import '../models/app_user.dart';
 import '../models/order_result.dart';
 import '../models/product.dart';
 import '../models/promo_banner.dart';
@@ -10,21 +12,220 @@ import '../models/promo_banner.dart';
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
+  final Map<String, dynamic>? errors;
 
-  ApiException(this.message, {this.statusCode});
+  ApiException(this.message, {this.statusCode, this.errors});
 
   @override
   String toString() => message;
 }
 
 class ApiService {
+  static const String _tokenStorageKey = 'sanctum_bearer_token';
   final http.Client _client;
+  final FlutterSecureStorage _storage;
 
-  ApiService({http.Client? client}) : _client = client ?? http.Client();
+  ApiService({
+    http.Client? client,
+    FlutterSecureStorage? storage,
+  })  : _client = client ?? http.Client(),
+        _storage = storage ?? const FlutterSecureStorage();
 
-  Future<List<Product>> fetchProducts() async {
+  /// Retrieve stored Sanctum Bearer token
+  Future<String?> getToken() async {
     try {
-      final response = await _client.get(Uri.parse(ApiConfig.products));
+      return await _storage.read(key: _tokenStorageKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Store Sanctum Bearer token securely
+  Future<void> saveToken(String token) async {
+    await _storage.write(key: _tokenStorageKey, value: token);
+  }
+
+  /// Clear stored token
+  Future<void> clearToken() async {
+    await _storage.delete(key: _tokenStorageKey);
+  }
+
+  /// Automatic headers injector appending `Authorization: Bearer <token>` and `Accept: application/json`
+  Future<Map<String, String>> _buildHeaders({Map<String, String>? extraHeaders}) async {
+    final token = await getToken();
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    if (extraHeaders != null) {
+      headers.addAll(extraHeaders);
+    }
+
+    return headers;
+  }
+
+  /// POST /auth/login - Sanctum authentication
+  Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    if (ApiConfig.bypassBackend) {
+      final mockToken = 'mock_sanctum_token_${DateTime.now().millisecondsSinceEpoch}';
+      await saveToken(mockToken);
+      return {
+        'token': mockToken,
+        'token_type': 'Bearer',
+        'user': {
+          'name': email.split('@').first.toUpperCase(),
+          'email': email.trim(),
+          'phone': '09171234567',
+        },
+      };
+    }
+
+    final headers = await _buildHeaders();
+    final response = await _client.post(
+      Uri.parse(ApiConfig.login),
+      headers: headers,
+      body: jsonEncode({
+        'email': email.trim(),
+        'password': password,
+      }),
+    );
+
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final token = body['token'] ?? body['access_token'] ?? body['data']?['token'];
+      if (token != null && token.toString().isNotEmpty) {
+        await saveToken(token.toString());
+      }
+      return body;
+    }
+
+    throw ApiException(
+      body['message']?.toString() ?? 'Invalid login credentials.',
+      statusCode: response.statusCode,
+      errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
+    );
+  }
+
+  /// POST /auth/register - Customer registration
+  Future<Map<String, dynamic>> register({
+    required String name,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    String? phone,
+  }) async {
+    if (ApiConfig.bypassBackend) {
+      final mockToken = 'mock_sanctum_token_${DateTime.now().millisecondsSinceEpoch}';
+      await saveToken(mockToken);
+      return {
+        'token': mockToken,
+        'token_type': 'Bearer',
+        'user': {
+          'name': name.trim(),
+          'email': email.trim(),
+          'phone': phone?.trim(),
+        },
+      };
+    }
+
+    final headers = await _buildHeaders();
+    final response = await _client.post(
+      Uri.parse(ApiConfig.register),
+      headers: headers,
+      body: jsonEncode({
+        'name': name.trim(),
+        'email': email.trim(),
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+        if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+      }),
+    );
+
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final token = body['token'] ?? body['access_token'] ?? body['data']?['token'];
+      if (token != null && token.toString().isNotEmpty) {
+        await saveToken(token.toString());
+      }
+      return body;
+    }
+
+    throw ApiException(
+      body['message']?.toString() ?? 'Registration failed.',
+      statusCode: response.statusCode,
+      errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
+    );
+  }
+
+  /// GET /auth/me - Fetch authenticated user profile details
+  Future<AppUser> getProfile() async {
+    if (ApiConfig.bypassBackend) {
+      return const AppUser(
+        email: 'customer@saddleranch.ph',
+        fullName: 'Juan Dela Cruz',
+        phone: '09171234567',
+        profileComplete: true,
+      );
+    }
+
+    final headers = await _buildHeaders();
+    final response = await _client.get(
+      Uri.parse(ApiConfig.me),
+      headers: headers,
+    );
+
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final userData = (body['user'] ?? body['data'] ?? body) as Map<String, dynamic>;
+      return AppUser.fromJson(userData);
+    }
+
+    throw ApiException(
+      body['message']?.toString() ?? 'Failed to fetch user profile.',
+      statusCode: response.statusCode,
+    );
+  }
+
+  /// POST /auth/logout - Revoke Sanctum Bearer token
+  Future<void> logout() async {
+    if (ApiConfig.bypassBackend) {
+      await clearToken();
+      return;
+    }
+
+    try {
+      final headers = await _buildHeaders();
+      await _client.post(
+        Uri.parse(ApiConfig.logout),
+        headers: headers,
+      );
+    } catch (_) {
+      // Ignore API errors during logout
+    } finally {
+      await clearToken();
+    }
+  }
+
+  /// Fetch menu products
+  Future<List<Product>> fetchProducts() async {
+    if (ApiConfig.bypassBackend) {
+      return _fallbackProducts;
+    }
+
+    try {
+      final headers = await _buildHeaders();
+      final response = await _client.get(
+        Uri.parse(ApiConfig.products),
+        headers: headers,
+      );
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = body['data'] as List<dynamic>? ?? [];
@@ -44,9 +245,18 @@ class ApiService {
     }
   }
 
+  /// Fetch promotional banners
   Future<List<PromoBanner>> fetchBanners() async {
+    if (ApiConfig.bypassBackend) {
+      return _fallbackBanners;
+    }
+
     try {
-      final response = await _client.get(Uri.parse(ApiConfig.banners));
+      final headers = await _buildHeaders();
+      final response = await _client.get(
+        Uri.parse(ApiConfig.banners),
+        headers: headers,
+      );
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = body['data'] as List<dynamic>? ?? [];
@@ -67,6 +277,7 @@ class ApiService {
     }
   }
 
+  /// Submit an order
   Future<OrderResult> placeOrder({
     required String orderType,
     required String paymentMethod,
@@ -77,9 +288,29 @@ class ApiService {
     String? deliveryAddress,
     String? deliveryNotes,
   }) async {
+    if (ApiConfig.bypassBackend) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      double total = 0;
+      for (final item in items) {
+        final price = (item['price'] as num?)?.toDouble() ?? 0;
+        final qty = (item['quantity'] as num?)?.toInt() ?? 1;
+        total += price * qty;
+      }
+      return OrderResult(
+        id: now % 100000,
+        orderNumber: 'SR-${(now % 10000).toString().padLeft(4, '0')}',
+        status: 'pending',
+        orderType: orderType,
+        paymentMethod: paymentMethod,
+        totalAmount: total,
+        tableNumber: tableNumber,
+      );
+    }
+
+    final headers = await _buildHeaders();
     final response = await _client.post(
       Uri.parse(ApiConfig.orders),
-      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      headers: headers,
       body: jsonEncode({
         'order_type': orderType,
         'payment_method': paymentMethod,
@@ -107,9 +338,13 @@ class ApiService {
 
   Map<String, dynamic> _decode(http.Response response) {
     if (response.body.isEmpty) return {};
-    final decoded = jsonDecode(response.body);
-    if (decoded is Map<String, dynamic>) return decoded;
-    return {'data': decoded};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      return {'data': decoded};
+    } catch (_) {
+      return {'message': response.body};
+    }
   }
 }
 

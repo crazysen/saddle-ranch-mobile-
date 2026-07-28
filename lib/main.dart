@@ -15,8 +15,10 @@ import 'screens/auth_gate.dart';
 import 'screens/cart_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
+import 'theme/apple_theme.dart';
 import 'utils/deep_link_parser.dart';
 import 'utils/menu_category.dart';
+import 'widgets/glass_cart_bar.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,7 +40,7 @@ class SaddleRanchApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Saddle Ranch',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
+        theme: AppleTheme.light,
         home: const AuthGate(child: MainShell()),
       ),
     );
@@ -89,6 +91,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _openMenu({MenuCategory? category}) {
+    AppleTheme.hapticFeedback();
     if (category != null) {
       context.read<MenuProvider>().setCategory(category);
     } else {
@@ -108,59 +111,78 @@ class _MainShellState extends State<MainShell> {
     final cartCount = context.watch<CartProvider>().itemCount;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: IndexedStack(
-        index: _index,
+      backgroundColor: AppleColors.scaffoldBackground,
+      body: Stack(
         children: [
-          HomeScreen(onOpenMenu: _openMenu),
-          const MenuScreen(),
-          const CartScreen(),
-          const AccountScreen(),
+          IndexedStack(
+            index: _index,
+            children: [
+              HomeScreen(onOpenMenu: _openMenu),
+              const MenuScreen(),
+              const CartScreen(),
+              const AccountScreen(),
+            ],
+          ),
+          // Sticky Glass Cart Bar overlay when not on Cart screen
+          if (_index != 2 && cartCount > 0)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: GlassCartBar(
+                onTapViewCart: () {
+                  setState(() => _index = 2);
+                },
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        shadowColor: Colors.black26,
+        backgroundColor: AppleColors.pureWhite,
+        surfaceTintColor: AppleColors.pureWhite,
+        shadowColor: Colors.black12,
         elevation: 8,
-        indicatorColor: AppColors.amber.withValues(alpha: 0.2),
+        indicatorColor: AppleColors.primaryAccent.withValues(alpha: 0.15),
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: (i) {
+          AppleTheme.hapticFeedback();
+          setState(() => _index = i);
+        },
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? AppColors.amberSoft : AppColors.muted,
+          return GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+            color: selected ? AppleColors.primaryAccent : AppleColors.mutedText,
           );
         }),
         destinations: [
           const NavigationDestination(
-            icon: Icon(Icons.home_outlined, color: AppColors.muted),
-            selectedIcon: Icon(Icons.home, color: AppColors.amber),
+            icon: Icon(Icons.home_outlined, color: AppleColors.mutedText),
+            selectedIcon: Icon(Icons.home, color: AppleColors.primaryAccent),
             label: 'Home',
           ),
           const NavigationDestination(
-            icon: Icon(Icons.restaurant_menu_outlined, color: AppColors.muted),
-            selectedIcon: Icon(Icons.restaurant_menu, color: AppColors.amber),
+            icon: Icon(Icons.restaurant_menu_outlined, color: AppleColors.mutedText),
+            selectedIcon: Icon(Icons.restaurant_menu, color: AppleColors.primaryAccent),
             label: 'Menu',
           ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: cartCount > 0,
               label: Text('$cartCount'),
-              child: const Icon(Icons.shopping_bag_outlined, color: AppColors.muted),
+              child: const Icon(Icons.shopping_bag_outlined, color: AppleColors.mutedText),
             ),
             selectedIcon: Badge(
               isLabelVisible: cartCount > 0,
               label: Text('$cartCount'),
-              child: const Icon(Icons.shopping_bag, color: AppColors.amber),
+              child: const Icon(Icons.shopping_bag, color: AppleColors.primaryAccent),
             ),
             label: 'Cart',
           ),
           const NavigationDestination(
-            icon: Icon(Icons.person_outline, color: AppColors.muted),
-            selectedIcon: Icon(Icons.person, color: AppColors.amber),
+            icon: Icon(Icons.person_outline, color: AppleColors.mutedText),
+            selectedIcon: Icon(Icons.person, color: AppleColors.primaryAccent),
             label: 'Account',
           ),
         ],

@@ -1,18 +1,19 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:saddle_ranch_mobile/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Shows Google login on first launch', (WidgetTester tester) async {
+  testWidgets('Shows login screen on first launch', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
 
     await tester.pumpWidget(const SaddleRanchApp());
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
 
+    expect(find.text('Login'), findsAtLeast(1));
     expect(find.text('Continue with Google'), findsOneWidget);
-    expect(find.text('Saddle Ranch'), findsWidgets);
   });
 }
