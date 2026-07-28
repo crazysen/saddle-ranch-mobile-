@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 
 import '../providers/auth_provider.dart';
 import '../theme/apple_theme.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +19,11 @@ class _LoginScreenState extends State<LoginScreen> {
   late VideoPlayerController _videoController;
   bool _videoInitialized = false;
 
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController(text: 'customer@saddleranch.ph');
+  final _passwordController = TextEditingController(text: 'customer123');
+  bool _obscurePassword = true;
+
   @override
   void initState() {
     super.initState();
@@ -27,16 +33,28 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _initVideoPlayer() async {
     try {
       _videoController = VideoPlayerController.asset('assets/videos/landing-video.mp4');
+      _videoController.setVolume(0); // Mute for web autoplay policies
       await _videoController.initialize();
       await _videoController.setLooping(true);
-      await _videoController.setVolume(0); // Mute for ambient background
       await _videoController.play();
       if (mounted) {
         setState(() => _videoInitialized = true);
       }
     } catch (_) {
-      if (mounted) {
-        setState(() => _videoInitialized = false);
+      try {
+        // Fallback asset path for Flutter Web bundling variations
+        _videoController = VideoPlayerController.asset('videos/landing-video.mp4');
+        _videoController.setVolume(0);
+        await _videoController.initialize();
+        await _videoController.setLooping(true);
+        await _videoController.play();
+        if (mounted) {
+          setState(() => _videoInitialized = true);
+        }
+      } catch (_) {
+        if (mounted) {
+          setState(() => _videoInitialized = false);
+        }
       }
     }
   }
@@ -46,25 +64,30 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_videoInitialized) {
       _videoController.dispose();
     }
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _fillCustomerDemo() async {
+  Future<void> _handleLogin() async {
     AppleTheme.hapticFeedback();
-    await context.read<AuthProvider>().loginAsDemo(
-          email: 'customer@saddleranch.ph',
-          fullName: 'Juan Dela Cruz',
-          phone: '09171234567',
-        );
-  }
+    if (!_formKey.currentState!.validate()) return;
 
-  Future<void> _fillDeveloperDemo() async {
-    AppleTheme.hapticFeedback();
-    await context.read<AuthProvider>().loginAsDemo(
-          email: 'dev@saddleranch.ph',
-          fullName: 'Dev Tester',
-          phone: '09998887766',
-        );
+    final auth = context.read<AuthProvider>();
+    final success = await auth.loginWithEmail(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
+
+    if (!mounted) return;
+    if (!success && auth.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.error!),
+          backgroundColor: AppleColors.danger,
+        ),
+      );
+    }
   }
 
   @override
@@ -75,12 +98,12 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: AppleColors.scaffoldBackground,
       body: Stack(
         children: [
-          // Top Area: Looping Landing Video Background
+          // Top Hero Area: Ambient Video Background
           Positioned.fill(
             child: Column(
               children: [
                 Expanded(
-                  flex: 5,
+                  flex: 4,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -132,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                      // Gradient overlay for smooth contrast transition
+                      // Gradient overlay for contrast
                       Positioned.fill(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
@@ -140,43 +163,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withValues(alpha: 0.25),
+                                Colors.black.withValues(alpha: 0.2),
                                 Colors.transparent,
-                                Colors.black.withValues(alpha: 0.35),
+                                Colors.black.withValues(alpha: 0.4),
                               ],
                               stops: const [0.0, 0.5, 1.0],
                             ),
-                          ),
-                        ),
-                      ),
-
-                      // Top Branding Header Badge
-                      Positioned(
-                        top: MediaQuery.of(context).padding.top + 16,
-                        left: 20,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.local_fire_department_rounded,
-                                color: AppleColors.primaryAccent,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Saddle Ranch Sizzle',
-                                style: GoogleFonts.domine(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                       ),
@@ -184,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const Expanded(
-                  flex: 4,
+                  flex: 5,
                   child: SizedBox.expand(),
                 ),
               ],
@@ -209,236 +201,306 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: SafeArea(
                 top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Handle bar pill
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                            color: AppleColors.cardBorder,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-
-                      // Main Sheet Heading
-                      Text(
-                        'Sign up or log in',
-                        style: GoogleFonts.domine(
-                          color: AppleColors.textPrimary,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Select your preferred method to continue',
-                        style: GoogleFonts.inter(
-                          color: AppleColors.mutedText,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      if (auth.error != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: AppleColors.danger.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppleColors.danger.withValues(alpha: 0.3)),
-                          ),
-                          child: Text(
-                            auth.error!,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              color: AppleColors.danger,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Handle bar pill
+                        Center(
+                          child: Container(
+                            width: 36,
+                            height: 4,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: AppleColors.cardBorder,
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                         ),
-                      ],
 
-                      // Single Primary Auth Method: Continue with Google
-                      SizedBox(
-                        height: 52,
-                        child: OutlinedButton(
-                          onPressed: auth.busy
-                              ? null
-                              : () async {
-                                  AppleTheme.hapticFeedback();
-                                  await context.read<AuthProvider>().signInWithGoogle();
-                                },
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppleColors.cardBorder, width: 1.2),
-                            backgroundColor: AppleColors.pureWhite,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            elevation: 0,
+                        // Heading
+                        Text(
+                          'Sign up or log in',
+                          style: GoogleFonts.domine(
+                            color: AppleColors.textPrimary,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
-                          child: auth.busy
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: AppleColors.primaryAccent,
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Image.network(
-                                      'https://pngimg.com/uploads/google/google_PNG19635.png',
-                                      height: 22,
-                                      width: 22,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (context, error, stackTrace) => const Icon(
-                                        Icons.g_mobiledata,
-                                        size: 28,
-                                        color: AppleColors.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'Continue with Google',
-                                      style: GoogleFonts.inter(
-                                        color: AppleColors.textPrimary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Quick Demo Access Strip
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppleColors.cardSurface,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: AppleColors.cardBorder),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(LucideIcons.sparkles, size: 15, color: AppleColors.primaryAccent),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Quick Demo Access',
-                                  style: GoogleFonts.domine(
-                                    color: AppleColors.textPrimary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: _fillCustomerDemo,
-                                    style: OutlinedButton.styleFrom(
-                                      backgroundColor: AppleColors.pureWhite,
-                                      foregroundColor: AppleColors.textPrimary,
-                                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                                      side: const BorderSide(color: AppleColors.cardBorder),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    icon: const Icon(LucideIcons.user, size: 15, color: AppleColors.primaryAccent),
-                                    label: Text(
-                                      'Customer Demo',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: _fillDeveloperDemo,
-                                    style: OutlinedButton.styleFrom(
-                                      backgroundColor: AppleColors.pureWhite,
-                                      foregroundColor: AppleColors.textPrimary,
-                                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                                      side: const BorderSide(color: AppleColors.cardBorder),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    icon: const Icon(LucideIcons.code2, size: 15, color: AppleColors.primaryAccent),
-                                    label: Text(
-                                      'Developer Access',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Terms and Privacy Policy Footer
-                      Text.rich(
-                        TextSpan(
-                          text: 'By signing up you agree to our ',
+                        const SizedBox(height: 4),
+                        Text(
+                          'Select your preferred method to continue',
                           style: GoogleFonts.inter(
                             color: AppleColors.mutedText,
-                            fontSize: 12,
-                            height: 1.4,
+                            fontSize: 13,
                           ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        if (auth.error != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: AppleColors.danger.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppleColors.danger.withValues(alpha: 0.3)),
+                            ),
+                            child: Text(
+                              auth.error!,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                color: AppleColors.danger,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        // Email Field
+                        Text(
+                          'Email Address',
+                          style: GoogleFonts.inter(
+                            color: AppleColors.textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
+                          style: GoogleFonts.inter(color: AppleColors.textPrimary),
+                          decoration: const InputDecoration(
+                            hintText: 'name@example.com',
+                            prefixIcon: Icon(LucideIcons.mail, size: 18),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your email address.';
+                            }
+                            if (!value.contains('@') || !value.contains('.')) {
+                              return 'Please enter a valid email address.';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Password Field
+                        Text(
+                          'Password',
+                          style: GoogleFonts.inter(
+                            color: AppleColors.textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          style: GoogleFonts.inter(color: AppleColors.textPrimary),
+                          decoration: InputDecoration(
+                            hintText: 'Enter your password',
+                            prefixIcon: const Icon(LucideIcons.lock, size: 18),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                                size: 18,
+                                color: AppleColors.mutedText,
+                              ),
+                              onPressed: () {
+                                AppleTheme.hapticFeedback();
+                                setState(() => _obscurePassword = !_obscurePassword);
+                              },
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password.';
+                            }
+                            if (value.length < 6) {
+                              return 'Password must be at least 6 characters.';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Sign In CTA Button
+                        SizedBox(
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: auth.busy ? null : _handleLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppleColors.primaryAccent,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: auth.busy
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'Sign In',
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Divider OR
+                        Row(
                           children: [
-                            TextSpan(
-                              text: 'Terms and Conditions',
-                              style: GoogleFonts.inter(
-                                color: AppleColors.textPrimary,
-                                fontWeight: FontWeight.bold,
-                                decoration: TextDecoration.underline,
+                            const Expanded(child: Divider(color: AppleColors.cardBorder)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text(
+                                'OR',
+                                style: GoogleFonts.inter(
+                                  color: AppleColors.mutedText,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                            const TextSpan(text: ' and '),
-                            TextSpan(
-                              text: 'Privacy Policy',
-                              style: GoogleFonts.inter(
-                                color: AppleColors.textPrimary,
-                                fontWeight: FontWeight.bold,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                            const TextSpan(text: '.'),
+                            const Expanded(child: Divider(color: AppleColors.cardBorder)),
                           ],
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+
+                        // Continue with Google Button (with exact Network Image)
+                        SizedBox(
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: auth.busy
+                                ? null
+                                : () async {
+                                    AppleTheme.hapticFeedback();
+                                    await context.read<AuthProvider>().signInWithGoogle();
+                                  },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppleColors.cardBorder, width: 1.2),
+                              backgroundColor: AppleColors.pureWhite,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.network(
+                                  'https://pngimg.com/uploads/google/google_PNG19635.png',
+                                  height: 22,
+                                  width: 22,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(
+                                    Icons.g_mobiledata,
+                                    size: 28,
+                                    color: AppleColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Continue with Google',
+                                  style: GoogleFonts.inter(
+                                    color: AppleColors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Register Navigation Link
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Don't have an account? ",
+                              style: GoogleFonts.inter(
+                                color: AppleColors.mutedText,
+                                fontSize: 13,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                AppleTheme.hapticFeedback();
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const RegisterScreen(),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'Sign Up',
+                                style: GoogleFonts.inter(
+                                  color: AppleColors.primaryAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Terms and Privacy Policy Footer
+                        Text.rich(
+                          TextSpan(
+                            text: 'By signing up you agree to our ',
+                            style: GoogleFonts.inter(
+                              color: AppleColors.mutedText,
+                              fontSize: 11,
+                              height: 1.4,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Terms and Conditions',
+                                style: GoogleFonts.inter(
+                                  color: AppleColors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                              const TextSpan(text: ' and '),
+                              TextSpan(
+                                text: 'Privacy Policy',
+                                style: GoogleFonts.inter(
+                                  color: AppleColors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                              const TextSpan(text: '.'),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
