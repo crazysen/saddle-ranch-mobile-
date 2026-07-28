@@ -35,21 +35,21 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Auto-filled Customer Demo account credentials'),
+        content: Text('Auto-filled Customer Demo credentials (customer@saddleranch.ph)'),
         duration: Duration(seconds: 1),
       ),
     );
   }
 
-  void _fillCashierDemo() {
+  void _fillDeveloperDemo() {
     AppleTheme.hapticFeedback();
     setState(() {
-      _emailController.text = 'cashier@saddleranch.ph';
-      _passwordController.text = 'employee123';
+      _emailController.text = 'dev@saddleranch.ph';
+      _passwordController.text = 'devpass123';
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Auto-filled Cashier Demo account credentials'),
+        content: Text('Auto-filled Developer Access credentials (dev@saddleranch.ph)'),
         duration: Duration(seconds: 1),
       ),
     );
@@ -333,7 +333,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Icon(LucideIcons.sparkles, size: 16, color: AppleColors.primaryAccent),
                           const SizedBox(width: 8),
                           Text(
-                            'Demo Account Quick-Fill',
+                            'Quick Demo Access',
                             style: GoogleFonts.domine(
                               color: AppleColors.textPrimary,
                               fontSize: 14,
@@ -371,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: _fillCashierDemo,
+                              onPressed: _fillDeveloperDemo,
                               style: OutlinedButton.styleFrom(
                                 backgroundColor: AppleColors.pureWhite,
                                 foregroundColor: AppleColors.textPrimary,
@@ -381,9 +381,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              icon: const Icon(LucideIcons.store, size: 15, color: AppleColors.primaryAccent),
+                              icon: const Icon(LucideIcons.code2, size: 15, color: AppleColors.primaryAccent),
                               label: Text(
-                                'Cashier Demo',
+                                'Developer Access',
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
                                   fontSize: 12,
