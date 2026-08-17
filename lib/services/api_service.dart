@@ -98,8 +98,17 @@ class ApiService {
       return body;
     }
 
+    String errorMessage = body['message']?.toString() ?? 'Invalid login credentials.';
+    if (body['errors'] is Map<String, dynamic>) {
+      final errMap = body['errors'] as Map<String, dynamic>;
+      final firstKey = errMap.keys.firstOrNull;
+      if (firstKey != null && errMap[firstKey] is List && (errMap[firstKey] as List).isNotEmpty) {
+        errorMessage = (errMap[firstKey] as List).first.toString();
+      }
+    }
+
     throw ApiException(
-      body['message']?.toString() ?? 'Invalid login credentials.',
+      errorMessage,
       statusCode: response.statusCode,
       errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
     );
@@ -131,12 +140,27 @@ class ApiService {
       final token = body['token'] ?? body['access_token'] ?? body['data']?['token'];
       if (token != null && token.toString().isNotEmpty) {
         await saveToken(token.toString());
+      } else {
+        // Automatically obtain session token via login
+        try {
+          final loginBody = await login(email: email, password: password);
+          return loginBody;
+        } catch (_) {}
       }
       return body;
     }
 
+    String errorMessage = body['message']?.toString() ?? 'Registration failed.';
+    if (body['errors'] is Map<String, dynamic>) {
+      final errMap = body['errors'] as Map<String, dynamic>;
+      final firstKey = errMap.keys.firstOrNull;
+      if (firstKey != null && errMap[firstKey] is List && (errMap[firstKey] as List).isNotEmpty) {
+        errorMessage = (errMap[firstKey] as List).first.toString();
+      }
+    }
+
     throw ApiException(
-      body['message']?.toString() ?? 'Registration failed.',
+      errorMessage,
       statusCode: response.statusCode,
       errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
     );

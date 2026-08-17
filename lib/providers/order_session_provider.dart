@@ -42,6 +42,9 @@ class OrderSessionProvider extends ChangeNotifier {
   String _branch = 'Bulihan'; // 'Bulihan' or 'Dasma'
   String? _tableNumber;
   bool _tableLocked = false;
+  String _deliveryAddressTitle = 'Saddle Ranch Bulihan Main';
+  String _deliveryAddressSubtitle = 'Aguinaldo Highway, Bulihan, Silang, Cavite';
+  bool _isBulihanAddress = true;
 
   // Waiter buzzer state
   String _waiterCallStatus = 'idle'; // 'idle' | 'pending' | 'acknowledged'
@@ -53,8 +56,23 @@ class OrderSessionProvider extends ChangeNotifier {
   bool get tableLocked => _tableLocked;
   String get waiterCallStatus => _waiterCallStatus;
   bool get isCallingWaiter => _isCallingWaiter;
+  String get deliveryAddressTitle => _deliveryAddressTitle;
+  String get deliveryAddressSubtitle => _deliveryAddressSubtitle;
+  bool get isBulihanAddress => _isBulihanAddress;
 
   bool get isDineIn => (_mode == OrderMode.dineIn || _mode == OrderMode.expressTakeout) && (_tableNumber?.isNotEmpty ?? false);
+
+  void updateLocation({
+    required String title,
+    required String subtitle,
+    required bool isBulihan,
+  }) {
+    _deliveryAddressTitle = title;
+    _deliveryAddressSubtitle = subtitle;
+    _isBulihanAddress = isBulihan;
+    _branch = isBulihan ? 'Bulihan' : 'Dasma';
+    notifyListeners();
+  }
 
   // GPS Coordinates from Spec
   static const double bulihanLat = 14.2384;

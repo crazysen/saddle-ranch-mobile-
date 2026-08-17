@@ -82,22 +82,6 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    final cleanEmail = email.trim().toLowerCase();
-    if (cleanEmail == 'customer@saddleranch.ph') {
-      return loginAsDemo(
-        email: 'customer@saddleranch.ph',
-        fullName: 'Juan Dela Cruz',
-        phone: '09171234567',
-      );
-    }
-    if (cleanEmail == 'dev@saddleranch.ph') {
-      return loginAsDemo(
-        email: 'dev@saddleranch.ph',
-        fullName: 'Dev Tester',
-        phone: '09998887766',
-      );
-    }
-
     _busy = true;
     _error = null;
     notifyListeners();
