@@ -32,7 +32,28 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedLocation = 'Home - BGC, Taguig';
   int _unreadNotifications = 3;
 
-  final List<Map<String, dynamic>> _notifications = [
+  final List<Map<String, dynamic>> _savedAddresses = [
+    {
+      'title': 'Home - BGC, Taguig',
+      'subtitle': '26th St, Bonifacio Global City',
+      'icon': LucideIcons.house,
+      'mode': OrderMode.delivery,
+    },
+    {
+      'title': 'Office - Ayala, Makati',
+      'subtitle': '12F Ayala Tower One, Makati City',
+      'icon': LucideIcons.building,
+      'mode': OrderMode.delivery,
+    },
+    {
+      'title': 'Saddle Ranch Tagaytay',
+      'subtitle': 'Aguinaldo Highway, Tagaytay City',
+      'icon': LucideIcons.mapPin,
+      'mode': OrderMode.pickup,
+    },
+  ];
+
+  static final List<Map<String, dynamic>> _notifications = [
     {
       'id': '1',
       'title': 'Order #SR-10492 Sizzling!',
@@ -62,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  final List<Map<String, dynamic>> _vouchers = [
+  static final List<Map<String, dynamic>> _vouchers = [
     {
       'id': 'v1',
       'discount': '₱100 OFF',
@@ -128,11 +149,128 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  void _showAddAddressDialog(BuildContext parentCtx) {
+    final labelCtrl = TextEditingController();
+    final detailsCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (dialogCtx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Add New Delivery Address',
+                  style: GoogleFonts.domine(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: AppleColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: labelCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Address Label (e.g. Condo, Grandma)',
+                    prefixIcon: Icon(LucideIcons.tag),
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Please enter a label' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: detailsCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Complete Address / Street / Unit',
+                    prefixIcon: Icon(LucideIcons.mapPin),
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Please enter complete address' : null,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (formKey.currentState?.validate() == true) {
+                        final title = labelCtrl.text.trim();
+                        final subtitle = detailsCtrl.text.trim();
+
+                        setState(() {
+                          _savedAddresses.insert(0, {
+                            'title': title,
+                            'subtitle': subtitle,
+                            'icon': LucideIcons.mapPin,
+                            'mode': OrderMode.delivery,
+                          });
+                          _selectedLocation = title;
+                        });
+
+                        context.read<OrderSessionProvider>().setMode(OrderMode.delivery);
+
+                        Navigator.pop(dialogCtx);
+                        Navigator.pop(parentCtx);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Address "$title" saved and selected!'),
+                            backgroundColor: AppleColors.primaryAccent,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppleColors.primaryAccent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      'Save & Deliver Here',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showLocationPicker() {
     final session = context.read<OrderSessionProvider>();
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -165,60 +303,39 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                _LocationOptionTile(
-                  icon: LucideIcons.house,
-                  title: 'Home - BGC, Taguig',
-                  subtitle: '26th St, Bonifacio Global City',
-                  selected: _selectedLocation == 'Home - BGC, Taguig',
-                  onTap: () {
-                    setState(() => _selectedLocation = 'Home - BGC, Taguig');
-                    session.setMode(OrderMode.delivery);
-                    Navigator.pop(ctx);
-                  },
-                ),
-                _LocationOptionTile(
-                  icon: LucideIcons.building,
-                  title: 'Office - Ayala, Makati',
-                  subtitle: '12F Ayala Tower One, Makati City',
-                  selected: _selectedLocation == 'Office - Ayala, Makati',
-                  onTap: () {
-                    setState(() => _selectedLocation = 'Office - Ayala, Makati');
-                    session.setMode(OrderMode.delivery);
-                    Navigator.pop(ctx);
-                  },
-                ),
-                _LocationOptionTile(
-                  icon: LucideIcons.mapPin,
-                  title: 'Saddle Ranch Tagaytay',
-                  subtitle: 'Aguinaldo Highway, Tagaytay City',
-                  selected: _selectedLocation == 'Saddle Ranch Tagaytay',
-                  onTap: () {
-                    setState(() => _selectedLocation = 'Saddle Ranch Tagaytay');
-                    session.setMode(OrderMode.pickup);
-                    Navigator.pop(ctx);
-                  },
-                ),
+                ..._savedAddresses.map((addr) {
+                  final title = addr['title'] as String;
+                  final subtitle = addr['subtitle'] as String;
+                  final icon = addr['icon'] as IconData;
+                  final mode = addr['mode'] as OrderMode;
+                  final isSelected = !session.isDineIn && _selectedLocation == title;
+
+                  return _LocationOptionTile(
+                    icon: icon,
+                    title: title,
+                    subtitle: subtitle,
+                    selected: isSelected,
+                    onTap: () {
+                      setState(() => _selectedLocation = title);
+                      session.setMode(mode);
+                      Navigator.pop(ctx);
+                    },
+                  );
+                }),
                 if (session.isDineIn)
                   _LocationOptionTile(
                     icon: LucideIcons.qrCode,
                     title: 'Table ${session.tableNumber} (Dine-In)',
                     subtitle: 'Locked table session',
                     selected: true,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                    },
+                    onTap: () => Navigator.pop(ctx),
                   ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Address manager coming soon!')),
-                      );
-                    },
-                    icon: const Icon(LucideIcons.plus, size: 16),
+                    onPressed: () => _showAddAddressDialog(ctx),
+                    icon: const Icon(LucideIcons.plus, size: 16, color: AppleColors.primaryAccent),
                     label: const Text('Add New Address'),
                   ),
                 ),
@@ -1016,9 +1133,6 @@ class _LocationOptionTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: selected
-            ? AppleColors.primaryAccent.withValues(alpha: 0.08)
-            : const Color(0xFFF7F7F8),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: selected
@@ -1026,31 +1140,53 @@ class _LocationOptionTile extends StatelessWidget {
               : const Color(0xFFE5E5E7),
         ),
       ),
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Icon(
-          icon,
-          color: selected ? AppleColors.primaryAccent : AppleColors.mutedText,
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-            color: AppleColors.textPrimary,
+      child: Material(
+        color: selected
+            ? AppleColors.primaryAccent.withValues(alpha: 0.08)
+            : const Color(0xFFF7F7F8),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: selected ? AppleColors.primaryAccent : AppleColors.mutedText,
+                  size: 22,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppleColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppleColors.mutedText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (selected)
+                  const Icon(Icons.check_circle, color: AppleColors.primaryAccent, size: 20),
+              ],
+            ),
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: AppleColors.mutedText,
-          ),
-        ),
-        trailing: selected
-            ? const Icon(Icons.check_circle, color: AppleColors.primaryAccent)
-            : null,
       ),
     );
   }
