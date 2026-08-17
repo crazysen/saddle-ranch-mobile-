@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -28,6 +29,71 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
+  String _selectedLocation = 'Home - BGC, Taguig';
+  int _unreadNotifications = 3;
+
+  final List<Map<String, dynamic>> _notifications = [
+    {
+      'id': '1',
+      'title': 'Order #SR-10492 Sizzling!',
+      'body': 'Your Sizzling Pork Sisig and Garlic Rice are hot on the grill!',
+      'time': '2m ago',
+      'icon': LucideIcons.flame,
+      'isOrder': true,
+      'unread': true,
+    },
+    {
+      'id': '2',
+      'title': 'Rider En Route #SR-10381',
+      'body': 'Rider Marco is on his way with your Bulalo Steak Feast.',
+      'time': '25m ago',
+      'icon': LucideIcons.bike,
+      'isOrder': true,
+      'unread': true,
+    },
+    {
+      'id': '3',
+      'title': 'Voucher Unlocked!',
+      'body': 'Exclusive ₱100 OFF coupon added to your wallet.',
+      'time': '1h ago',
+      'icon': LucideIcons.ticket,
+      'isOrder': false,
+      'unread': true,
+    },
+  ];
+
+  final List<Map<String, dynamic>> _vouchers = [
+    {
+      'id': 'v1',
+      'discount': '₱100 OFF',
+      'title': 'Sizzling Special',
+      'minSpend': 'Min. spend ₱500',
+      'code': 'SIZZLE100',
+      'expiry': 'Valid till Aug 31',
+      'claimed': false,
+      'color': const Color(0xFFFF6B00),
+    },
+    {
+      'id': 'v2',
+      'discount': '15% OFF',
+      'title': 'Barkada Feast',
+      'minSpend': 'Min. spend ₱1,200',
+      'code': 'BARKADA15',
+      'expiry': 'Platter orders only',
+      'claimed': false,
+      'color': const Color(0xFFD84315),
+    },
+    {
+      'id': 'v3',
+      'discount': 'FREE DRINK',
+      'title': 'Red Iced Tea Pitcher',
+      'minSpend': 'On any meal deal',
+      'code': 'FREEDRINK',
+      'expiry': 'Valid today only',
+      'claimed': false,
+      'color': const Color(0xFF0288D1),
+    },
+  ];
 
   static final List<Map<String, dynamic>> _recentlyOrdered = [
     {
@@ -62,6 +128,254 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  void _showLocationPicker() {
+    final session = context.read<OrderSessionProvider>();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Select Delivery Location',
+                  style: GoogleFonts.domine(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: AppleColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _LocationOptionTile(
+                  icon: LucideIcons.house,
+                  title: 'Home - BGC, Taguig',
+                  subtitle: '26th St, Bonifacio Global City',
+                  selected: _selectedLocation == 'Home - BGC, Taguig',
+                  onTap: () {
+                    setState(() => _selectedLocation = 'Home - BGC, Taguig');
+                    session.setMode(OrderMode.delivery);
+                    Navigator.pop(ctx);
+                  },
+                ),
+                _LocationOptionTile(
+                  icon: LucideIcons.building,
+                  title: 'Office - Ayala, Makati',
+                  subtitle: '12F Ayala Tower One, Makati City',
+                  selected: _selectedLocation == 'Office - Ayala, Makati',
+                  onTap: () {
+                    setState(() => _selectedLocation = 'Office - Ayala, Makati');
+                    session.setMode(OrderMode.delivery);
+                    Navigator.pop(ctx);
+                  },
+                ),
+                _LocationOptionTile(
+                  icon: LucideIcons.mapPin,
+                  title: 'Saddle Ranch Tagaytay',
+                  subtitle: 'Aguinaldo Highway, Tagaytay City',
+                  selected: _selectedLocation == 'Saddle Ranch Tagaytay',
+                  onTap: () {
+                    setState(() => _selectedLocation = 'Saddle Ranch Tagaytay');
+                    session.setMode(OrderMode.pickup);
+                    Navigator.pop(ctx);
+                  },
+                ),
+                if (session.isDineIn)
+                  _LocationOptionTile(
+                    icon: LucideIcons.qrCode,
+                    title: 'Table ${session.tableNumber} (Dine-In)',
+                    subtitle: 'Locked table session',
+                    selected: true,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Address manager coming soon!')),
+                      );
+                    },
+                    icon: const Icon(LucideIcons.plus, size: 16),
+                    label: const Text('Add New Address'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showNotificationsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.65,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          builder: (_, controller) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Order Notifications',
+                        style: GoogleFonts.domine(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: AppleColors.textPrimary,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _unreadNotifications = 0;
+                            for (var n in _notifications) {
+                              n['unread'] = false;
+                            }
+                          });
+                          Navigator.pop(ctx);
+                        },
+                        child: const Text('Mark all read'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: controller,
+                      itemCount: _notifications.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final notif = _notifications[index];
+                        final isUnread = notif['unread'] as bool;
+
+                        return Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: isUnread
+                                ? AppleColors.primaryAccent.withValues(alpha: 0.06)
+                                : const Color(0xFFF9F9FB),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isUnread
+                                  ? AppleColors.primaryAccent.withValues(alpha: 0.25)
+                                  : const Color(0xFFEEEEEE),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppleColors.primaryAccent.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  notif['icon'] as IconData,
+                                  color: AppleColors.primaryAccent,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          notif['title'] as String,
+                                          style: GoogleFonts.inter(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 14,
+                                            color: AppleColors.textPrimary,
+                                          ),
+                                        ),
+                                        Text(
+                                          notif['time'] as String,
+                                          style: GoogleFonts.inter(
+                                            color: AppleColors.mutedText,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      notif['body'] as String,
+                                      style: GoogleFonts.inter(
+                                        color: AppleColors.textBody,
+                                        fontSize: 12,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final menu = context.watch<MenuProvider>();
@@ -74,6 +388,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ? user!.fullName
         : 'John Daniel';
 
+    final displayLocation = session.isDineIn
+        ? 'Table ${session.tableNumber} (Dine-In)'
+        : _selectedLocation;
+
     return Scaffold(
       backgroundColor: AppleColors.scaffoldBackground,
       body: SafeArea(
@@ -85,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              // Header Section matching visual design mockup
+              // Functional Header Section with Location Picker
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -109,74 +427,95 @@ class _HomeScreenState extends State<HomeScreen> {
                             : null,
                       ),
                       const SizedBox(width: 12),
-                      // Delivery Location Dropdown Title
+                      // Functional Delivery Location Dropdown
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  color: AppleColors.primaryAccent,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Deliver to',
-                                  style: GoogleFonts.inter(
-                                    color: AppleColors.mutedText,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                        child: GestureDetector(
+                          onTap: _showLocationPicker,
+                          behavior: HitTestBehavior.opaque,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on,
+                                    color: AppleColors.primaryAccent,
+                                    size: 16,
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Text(
-                                  userName,
-                                  style: GoogleFonts.inter(
-                                    color: AppleColors.textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    session.isDineIn ? 'Dine-In Location' : 'Deliver to',
+                                    style: GoogleFonts.inter(
+                                      color: AppleColors.mutedText,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: AppleColors.primaryAccent,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      displayLocation,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.inter(
+                                        color: AppleColors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: AppleColors.primaryAccent,
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      // Notification bell icon with badge indicator
+                      // Functional Notification Bell Button
                       Stack(
                         children: [
                           IconButton(
-                            onPressed: () {},
+                            onPressed: _showNotificationsSheet,
                             icon: const Icon(
                               LucideIcons.bell,
                               color: AppleColors.textPrimary,
                               size: 22,
                             ),
                           ),
-                          Positioned(
-                            right: 12,
-                            top: 12,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppleColors.primaryAccent,
-                                shape: BoxShape.circle,
+                          if (_unreadNotifications > 0)
+                            Positioned(
+                              right: 10,
+                              top: 10,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: AppleColors.primaryAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                child: Text(
+                                  '$_unreadNotifications',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ],
@@ -184,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Full Width Search Bar ("Search menu...") with Sort button removed
+              // Full Width Search Bar ("Search menu...")
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -228,7 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Category Icons (Below Search) - Sizzling, Filipino Cousines, Barkada (Rice bowl icon), Rice and Drinks
+              // Category Icons (Below Search) - Sizzling, Filipino Cousines, Barkada, Rice and Drinks
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
@@ -399,39 +738,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // "How are you Ordering" Section - Compact 1 Row with 3 Columns (Icons only, no images)
+              // "How are you Ordering" Section WITHOUT "See All"
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                  child: Row(
-                    children: [
-                      Text(
-                        'How are you Ordering',
-                        style: GoogleFonts.inter(
-                          color: AppleColors.textPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                        ),
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () => widget.onOpenMenu(),
-                        child: Text(
-                          'See all',
-                          style: GoogleFonts.inter(
-                            color: AppleColors.primaryAccent,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'How are you Ordering',
+                    style: GoogleFonts.inter(
+                      color: AppleColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
               ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 110 + bottomInset),
-                sliver: SliverToBoxAdapter(
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
                       Expanded(
@@ -474,6 +797,60 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+
+              // Vouchers Section directly below "How are you ordering"
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 26, 16, 12),
+                  child: Text(
+                    'Vouchers & Coupons',
+                    style: GoogleFonts.inter(
+                      color: AppleColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 110 + bottomInset),
+                sliver: SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 110,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _vouchers.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final v = _vouchers[index];
+                        final isClaimed = v['claimed'] as bool;
+
+                        return _TicketVoucherCard(
+                          discount: v['discount'] as String,
+                          title: v['title'] as String,
+                          minSpend: v['minSpend'] as String,
+                          code: v['code'] as String,
+                          expiry: v['expiry'] as String,
+                          claimed: isClaimed,
+                          accentColor: v['color'] as Color,
+                          onClaim: () {
+                            Clipboard.setData(ClipboardData(text: v['code'] as String));
+                            setState(() {
+                              v['claimed'] = true;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Voucher code ${v['code']} copied & applied!'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -551,7 +928,6 @@ class _CompactOrderingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 90,
       decoration: BoxDecoration(
         color: selected
             ? AppleColors.primaryAccent
@@ -577,16 +953,17 @@ class _CompactOrderingCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   icon,
-                  size: 24,
+                  size: 22,
                   color: selected ? Colors.white : AppleColors.primaryAccent,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   title,
                   maxLines: 1,
@@ -617,4 +994,280 @@ class _CompactOrderingCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _LocationOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _LocationOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: selected
+            ? AppleColors.primaryAccent.withValues(alpha: 0.08)
+            : const Color(0xFFF7F7F8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: selected
+              ? AppleColors.primaryAccent
+              : const Color(0xFFE5E5E7),
+        ),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        leading: Icon(
+          icon,
+          color: selected ? AppleColors.primaryAccent : AppleColors.mutedText,
+        ),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: AppleColors.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: AppleColors.mutedText,
+          ),
+        ),
+        trailing: selected
+            ? const Icon(Icons.check_circle, color: AppleColors.primaryAccent)
+            : null,
+      ),
+    );
+  }
+}
+
+/// Realistic Ticket Voucher Card with scalloped edge punch cutouts
+class _TicketVoucherCard extends StatelessWidget {
+  final String discount;
+  final String title;
+  final String minSpend;
+  final String code;
+  final String expiry;
+  final bool claimed;
+  final Color accentColor;
+  final VoidCallback onClaim;
+
+  const _TicketVoucherCard({
+    required this.discount,
+    required this.title,
+    required this.minSpend,
+    required this.code,
+    required this.expiry,
+    required this.claimed,
+    required this.accentColor,
+    required this.onClaim,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 270,
+      height: 105,
+      child: ClipPath(
+        clipper: _TicketClipper(),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Accent Stripe
+              Container(
+                width: 6,
+                height: double.infinity,
+                color: accentColor,
+              ),
+              // Voucher Left Content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        discount,
+                        style: GoogleFonts.inter(
+                          color: accentColor,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 17,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color: AppleColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$minSpend • $expiry',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color: AppleColors.mutedText,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Vertical Dashed Divider
+              CustomPaint(
+                size: const Size(1, double.infinity),
+                painter: _DashedLinePainter(),
+              ),
+              // Ticket Stub Claim Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        code,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10,
+                          color: AppleColors.textPrimary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 28,
+                      child: ElevatedButton(
+                        onPressed: claimed ? null : onClaim,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: claimed ? Colors.grey[400] : accentColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          claimed ? 'Applied' : 'Claim',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Custom Ticket Clipper creating semi-circular notch cutouts on left and right sides
+class _TicketClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    const radius = 12.0;
+    const notchRadius = 8.0;
+    final path = Path();
+
+    // Top edge
+    path.moveTo(radius, 0);
+    path.lineTo(size.width - radius, 0);
+    path.arcToPoint(Offset(size.width, radius), radius: const Radius.circular(radius));
+
+    // Right edge with punch notch
+    final rightNotchY = size.height * 0.5;
+    path.lineTo(size.width, rightNotchY - notchRadius);
+    path.arcToPoint(
+      Offset(size.width, rightNotchY + notchRadius),
+      radius: const Radius.circular(notchRadius),
+      clockwise: false,
+    );
+    path.lineTo(size.width, size.height - radius);
+    path.arcToPoint(Offset(size.width - radius, size.height), radius: const Radius.circular(radius));
+
+    // Bottom edge
+    path.lineTo(radius, size.height);
+    path.arcToPoint(Offset(0, size.height - radius), radius: const Radius.circular(radius));
+
+    // Left edge with punch notch
+    final leftNotchY = size.height * 0.5;
+    path.lineTo(0, leftNotchY + notchRadius);
+    path.arcToPoint(
+      Offset(0, leftNotchY - notchRadius),
+      radius: const Radius.circular(notchRadius),
+      clockwise: false,
+    );
+    path.lineTo(0, radius);
+    path.arcToPoint(Offset(radius, 0), radius: const Radius.circular(radius));
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class _DashedLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFD0D0D0)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    double dashHeight = 4, dashSpace = 3, startY = 6;
+    while (startY < size.height - 6) {
+      canvas.drawLine(Offset(0, startY), Offset(0, startY + dashHeight), paint);
+      startY += dashHeight + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

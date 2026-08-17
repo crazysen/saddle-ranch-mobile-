@@ -16,12 +16,10 @@ class QrScannerScreen extends StatefulWidget {
 class _QrScannerScreenState extends State<QrScannerScreen> {
   final _controller = MobileScannerController();
   bool _handled = false;
-  final _manualCtrl = TextEditingController();
 
   @override
   void dispose() {
     _controller.dispose();
-    _manualCtrl.dispose();
     super.dispose();
   }
 
@@ -67,77 +65,36 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       appBar: AppBar(
         title: const Text('Scan table QR', style: TextStyle(fontWeight: FontWeight.w900)),
       ),
-      body: Column(
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                MobileScanner(
-                  controller: _controller,
-                  onDetect: _onDetect,
-                ),
-                Center(
-                  child: Container(
-                    width: 240,
-                    height: 240,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.amber, width: 3),
-                    ),
-                  ),
-                ),
-                const Positioned(
-                  left: 24,
-                  right: 24,
-                  bottom: 24,
-                  child: Text(
-                    'Point at the QR on your table tent',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      shadows: [Shadow(blurRadius: 8, color: Colors.black)],
-                    ),
-                  ),
-                ),
-              ],
+          MobileScanner(
+            controller: _controller,
+            onDetect: _onDetect,
+          ),
+          Center(
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.amber, width: 3),
+              ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-            color: AppColors.surface,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Or enter table number',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _manualCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          hintText: 'e.g. 05',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        final value = _manualCtrl.text.trim();
-                        if (value.isEmpty) return;
-                        _applyTable(value);
-                      },
-                      child: const Text('Go'),
-                    ),
-                  ],
-                ),
-              ],
+          const Positioned(
+            left: 24,
+            right: 24,
+            bottom: 48,
+            child: Text(
+              'Point your camera at the QR code on your table tent',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+              ),
             ),
           ),
         ],
