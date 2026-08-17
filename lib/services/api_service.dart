@@ -8,6 +8,7 @@ import '../models/app_user.dart';
 import '../models/order_result.dart';
 import '../models/product.dart';
 import '../models/promo_banner.dart';
+import '../models/voucher.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -69,25 +70,15 @@ class ApiService {
     return headers;
   }
 
-  /// POST /auth/login - Sanctum authentication
+  // ==========================================
+  // 1. AUTHENTICATION ENDPOINTS
+  // ==========================================
+
+  /// POST /auth/login - Sanctum authentication against live database
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
-    if (ApiConfig.bypassBackend) {
-      final mockToken = 'mock_sanctum_token_${DateTime.now().millisecondsSinceEpoch}';
-      await saveToken(mockToken);
-      return {
-        'token': mockToken,
-        'token_type': 'Bearer',
-        'user': {
-          'name': email.split('@').first.toUpperCase(),
-          'email': email.trim(),
-          'phone': '09171234567',
-        },
-      };
-    }
-
     final headers = await _buildHeaders();
     final response = await _client.post(
       Uri.parse(ApiConfig.login),
@@ -114,7 +105,7 @@ class ApiService {
     );
   }
 
-  /// POST /auth/register - Customer registration
+  /// POST /customer/register - Customer registration in database
   Future<Map<String, dynamic>> register({
     required String name,
     required String email,
@@ -122,20 +113,6 @@ class ApiService {
     required String passwordConfirmation,
     String? phone,
   }) async {
-    if (ApiConfig.bypassBackend) {
-      final mockToken = 'mock_sanctum_token_${DateTime.now().millisecondsSinceEpoch}';
-      await saveToken(mockToken);
-      return {
-        'token': mockToken,
-        'token_type': 'Bearer',
-        'user': {
-          'name': name.trim(),
-          'email': email.trim(),
-          'phone': phone?.trim(),
-        },
-      };
-    }
-
     final headers = await _buildHeaders();
     final response = await _client.post(
       Uri.parse(ApiConfig.register),
@@ -145,7 +122,7 @@ class ApiService {
         'email': email.trim(),
         'password': password,
         'password_confirmation': passwordConfirmation,
-        if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+        if (phone != null && phone.trim().isNotEmpty) 'phone_number': phone.trim(),
       }),
     );
 
@@ -165,17 +142,8 @@ class ApiService {
     );
   }
 
-  /// GET /auth/me - Fetch authenticated user profile details
+  /// GET /auth/me - Fetch authenticated user profile details from database
   Future<AppUser> getProfile() async {
-    if (ApiConfig.bypassBackend) {
-      return const AppUser(
-        email: 'customer@saddleranch.ph',
-        fullName: 'Juan Dela Cruz',
-        phone: '09171234567',
-        profileComplete: true,
-      );
-    }
-
     final headers = await _buildHeaders();
     final response = await _client.get(
       Uri.parse(ApiConfig.me),
@@ -196,11 +164,6 @@ class ApiService {
 
   /// POST /auth/logout - Revoke Sanctum Bearer token
   Future<void> logout() async {
-    if (ApiConfig.bypassBackend) {
-      await clearToken();
-      return;
-    }
-
     try {
       final headers = await _buildHeaders();
       await _client.post(
@@ -214,72 +177,112 @@ class ApiService {
     }
   }
 
-  /// Fetch menu products
+  // ==========================================
+  // 2. MENU & PROMOTIONS ENDPOINTS
+  // ==========================================
+
+  /// GET /products - Fetch active menu products directly from database
   Future<List<Product>> fetchProducts() async {
-    if (ApiConfig.bypassBackend) {
-      return _fallbackProducts;
+    final headers = await _buildHeaders();
+    final response = await _client.get(
+      Uri.parse(ApiConfig.products),
+      headers: headers,
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final data = body['data'] as List<dynamic>? ?? [];
+      return data
+          .map((e) => Product.fromJson(e as Map<String, dynamic>))
+          .where((p) => p.isActive)
+          .toList();
     }
-
-    try {
-      final headers = await _buildHeaders();
-      final response = await _client.get(
-        Uri.parse(ApiConfig.products),
-        headers: headers,
-      );
-      final body = _decode(response);
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final data = body['data'] as List<dynamic>? ?? [];
-        return data
-            .map((e) => Product.fromJson(e as Map<String, dynamic>))
-            .where((p) => p.isActive)
-            .toList();
-      }
-      throw ApiException(
-        body['message']?.toString() ?? 'Failed to load products.',
-        statusCode: response.statusCode,
-      );
-    } on ApiException {
-      rethrow;
-    } catch (_) {
-      return _fallbackProducts;
-    }
+    throw ApiException(
+      body['message']?.toString() ?? 'Failed to load products from database.',
+      statusCode: response.statusCode,
+    );
   }
 
-  /// Fetch promotional banners
+  /// GET /banners - Fetch promotional banners directly from database
   Future<List<PromoBanner>> fetchBanners() async {
-    if (ApiConfig.bypassBackend) {
-      return _fallbackBanners;
+    final headers = await _buildHeaders();
+    final response = await _client.get(
+      Uri.parse(ApiConfig.banners),
+      headers: headers,
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final data = body['data'] as List<dynamic>? ?? [];
+      return data
+          .map((e) => PromoBanner.fromJson(e as Map<String, dynamic>))
+          .where((b) => b.isActive)
+          .toList()
+        ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+    }
+    throw ApiException(
+      body['message']?.toString() ?? 'Failed to load banners from database.',
+      statusCode: response.statusCode,
+    );
+  }
+
+  // ==========================================
+  // 3. VOUCHER VALIDATION & LISTING
+  // ==========================================
+
+  /// POST /vouchers/validate - Validate coupon code directly against database discount engine
+  Future<Map<String, dynamic>> validateVoucher({
+    required String code,
+    required double subtotal,
+    String branch = 'Bulihan',
+  }) async {
+    final headers = await _buildHeaders();
+    final response = await _client.post(
+      Uri.parse(ApiConfig.validateVoucher),
+      headers: headers,
+      body: jsonEncode({
+        'code': code.trim().toUpperCase(),
+        'subtotal': subtotal,
+        'branch': branch,
+      }),
+    );
+
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return body;
     }
 
+    throw ApiException(
+      body['message']?.toString() ?? 'Invalid voucher code or conditions not met.',
+      statusCode: response.statusCode,
+    );
+  }
+
+  /// GET /customer/vouchers - Available vouchers for authenticated user from database
+  Future<List<Voucher>> fetchCustomerVouchers() async {
     try {
       final headers = await _buildHeaders();
       final response = await _client.get(
-        Uri.parse(ApiConfig.banners),
+        Uri.parse(ApiConfig.customerVouchers),
         headers: headers,
       );
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final data = body['data'] as List<dynamic>? ?? [];
-        return data
-            .map((e) => PromoBanner.fromJson(e as Map<String, dynamic>))
-            .where((b) => b.isActive)
-            .toList()
-          ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+        final list = (body['data'] ?? body['vouchers'] ?? body) as List<dynamic>? ?? [];
+        return list.map((v) => Voucher.fromJson(v as Map<String, dynamic>)).toList();
       }
-      throw ApiException(
-        body['message']?.toString() ?? 'Failed to load banners.',
-        statusCode: response.statusCode,
-      );
-    } on ApiException {
-      rethrow;
+      return [];
     } catch (_) {
-      return _fallbackBanners;
+      return [];
     }
   }
 
-  /// Submit an order
+  // ==========================================
+  // 4. ORDERS & TRACKING
+  // ==========================================
+
+  /// POST /orders - Place new order into live database
   Future<OrderResult> placeOrder({
     required String orderType,
+    String branch = 'Bulihan',
     required String paymentMethod,
     required List<Map<String, dynamic>> items,
     String? tableNumber,
@@ -287,40 +290,23 @@ class ApiService {
     String? customerPhone,
     String? deliveryAddress,
     String? deliveryNotes,
+    String? voucherCode,
   }) async {
-    if (ApiConfig.bypassBackend) {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      double total = 0;
-      for (final item in items) {
-        final price = (item['price'] as num?)?.toDouble() ?? 0;
-        final qty = (item['quantity'] as num?)?.toInt() ?? 1;
-        total += price * qty;
-      }
-      return OrderResult(
-        id: now % 100000,
-        orderNumber: 'SR-${(now % 10000).toString().padLeft(4, '0')}',
-        status: 'pending',
-        orderType: orderType,
-        paymentMethod: paymentMethod,
-        totalAmount: total,
-        tableNumber: tableNumber,
-      );
-    }
-
     final headers = await _buildHeaders();
     final response = await _client.post(
       Uri.parse(ApiConfig.orders),
       headers: headers,
       body: jsonEncode({
         'order_type': orderType,
+        'branch': branch,
         'payment_method': paymentMethod,
         'items': items,
         if (tableNumber != null && tableNumber.isNotEmpty) 'table_number': tableNumber,
         if (customerName != null && customerName.isNotEmpty) 'customer_name': customerName,
         if (customerPhone != null && customerPhone.isNotEmpty) 'customer_phone': customerPhone,
-        if (deliveryAddress != null && deliveryAddress.isNotEmpty)
-          'delivery_address': deliveryAddress,
+        if (deliveryAddress != null && deliveryAddress.isNotEmpty) 'delivery_address': deliveryAddress,
         if (deliveryNotes != null && deliveryNotes.isNotEmpty) 'delivery_notes': deliveryNotes,
+        if (voucherCode != null && voucherCode.isNotEmpty) 'voucher_code': voucherCode,
       }),
     );
 
@@ -331,9 +317,98 @@ class ApiService {
     }
 
     throw ApiException(
-      body['message']?.toString() ?? 'Failed to place order.',
+      body['message']?.toString() ?? 'Failed to place order in database.',
+      statusCode: response.statusCode,
+      errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
+    );
+  }
+
+  /// GET /orders/track?query=... - Track active orders from database
+  Future<List<OrderResult>> trackOrders({String? query, bool all = false}) async {
+    try {
+      final headers = await _buildHeaders();
+      final uri = Uri.parse(ApiConfig.trackOrders).replace(
+        queryParameters: {
+          if (query != null && query.isNotEmpty) 'query': query,
+          if (all) 'all': '1',
+        },
+      );
+
+      final response = await _client.get(uri, headers: headers);
+      final body = _decode(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
+        return list.map((o) => OrderResult.fromJson(o as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// GET /customer/orders - Historical orders for logged-in user from database
+  Future<List<OrderResult>> fetchCustomerOrders() async {
+    try {
+      final headers = await _buildHeaders();
+      final response = await _client.get(
+        Uri.parse(ApiConfig.customerOrders),
+        headers: headers,
+      );
+      final body = _decode(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
+        return list.map((o) => OrderResult.fromJson(o as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // ==========================================
+  // 5. WAITER CALL BUZZER (QR In-House)
+  // ==========================================
+
+  /// POST /waiter-call - Buzz for assistance in live database/cache
+  Future<void> callWaiter({required String tableNumber, String branch = 'Bulihan'}) async {
+    final headers = await _buildHeaders();
+    final response = await _client.post(
+      Uri.parse(ApiConfig.waiterCall),
+      headers: headers,
+      body: jsonEncode({
+        'table_number': tableNumber,
+        'branch': branch,
+      }),
+    );
+
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+
+    throw ApiException(
+      body['message']?.toString() ?? 'Unable to send waiter buzzer signal.',
       statusCode: response.statusCode,
     );
+  }
+
+  /// GET /waiter-call/status?table_number=... - Poll waiter buzzer status from database
+  Future<String> getWaiterCallStatus({required String tableNumber}) async {
+    try {
+      final headers = await _buildHeaders();
+      final uri = Uri.parse(ApiConfig.waiterCallStatus).replace(
+        queryParameters: {'table_number': tableNumber},
+      );
+      final response = await _client.get(uri, headers: headers);
+      final body = _decode(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = body['data'] as Map<String, dynamic>? ?? body;
+        return (data['status'] ?? 'idle').toString();
+      }
+      return 'idle';
+    } catch (_) {
+      return 'idle';
+    }
   }
 
   Map<String, dynamic> _decode(http.Response response) {
@@ -347,121 +422,3 @@ class ApiService {
     }
   }
 }
-
-const _fallbackBanners = [
-  PromoBanner(
-    id: 1,
-    title: 'Weekend Sizzling Specials',
-    subtitle: 'Up to 15% off barkada platters',
-    badge: 'Hot',
-    imagePath:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuASVSO6N3lzIbdlCDT85viSxOZiQKjWADlA5k7ymludjTdSCB7tqV0bZvXRba3-L4gemLyqy9PxmqnYMBnSsxb5yfI_XM-qajS5ZEnS1Am8OBu5uN8_smBFlDdy4xR0UNE8jDFJP8vNSRQcqqDSG4p-oDij5kCvWALcyBZVeuA1QdnqC9a6I5s9l2ba3Zjfe0xSPjMr0jLCAB1z-oJS5xBL9meeUeFsmiMgjQ96VoXotgHsy3Jl3d9NQIv1liJsKeu_sJec2rrkNziY',
-    isActive: true,
-    displayOrder: 1,
-  ),
-  PromoBanner(
-    id: 2,
-    title: 'Sisig Night Combo',
-    subtitle: 'Free iced tea on ₱499+',
-    badge: 'Deal',
-    imagePath:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuDt2cP7W6u7Hw-wJCWrbYiEh20Z4b79UCpbKxmmyVbQzw0xlTklDnEKOpEzeymppd9l-ODs0TOelRWM0iLgwF8K_OKfXIBpTO8lSH0yyxPtaMCTQrzQ4ykSkJPDryw9S9IBB1wNoeHFGtHcQDy4MEVr0_tUDss7SKe1fe58XBlXeql1nJ1D2J0zJ0ZFO4qRm213kO813mLEdYdUMjsTD0J2PtB7cz_0FmmDHccmacBmhMyp7a_fJ7teNVsG3sgWyfW24O1p08mnUE9t',
-    isActive: true,
-    displayOrder: 2,
-  ),
-  PromoBanner(
-    id: 3,
-    title: 'Bulalo Steak Feast',
-    subtitle: 'Share for 2–3 people',
-    badge: 'New',
-    imagePath:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCatSLXJ-mynm_AwjLXsdG9xKbMwziehShgiNtyXaX2NZEeZFhSXaTmHMgLuACAitSC3WZ0g_9lSTavvnqO4eKFlaC0pnnA9OngEMtRicl0vfSF2_t4WqzxTKxW-H-X0i_tppiClzEOZ-fAuu1ezCbRVOcdVdwZHokttY1ATDIO4BuA185dwrm0QDuPpYjQ7qD9ybH5bl0WPn1wHJ3S5pB6JuCOoocWTfZ95cB0Lfqx1KbjbUwqGJxkhwxmqypEJta64yq1PajT3oWC',
-    isActive: true,
-    displayOrder: 3,
-  ),
-];
-
-const _fallbackProducts = [
-  Product(
-    id: 1,
-    name: 'Sizzling Pork Sisig',
-    description: 'Crispy pork belly with local spices and egg on a hot plate.',
-    price: 180,
-    imagePath:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuDt2cP7W6u7Hw-wJCWrbYiEh20Z4b79UCpbKxmmyVbQzw0xlTklDnEKOpEzeymppd9l-ODs0TOelRWM0iLgwF8K_OKfXIBpTO8lSH0yyxPtaMCTQrzQ4ykSkJPDryw9S9IBB1wNoeHFGtHcQDy4MEVr0_tUDss7SKe1fe58XBlXeql1nJ1D2J0zJ0ZFO4qRm213kO813mLEdYdUMjsTD0J2PtB7cz_0FmmDHccmacBmhMyp7a_fJ7teNVsG3sgWyfW24O1p08mnUE9t',
-    stockQuantity: 50,
-    isActive: true,
-  ),
-  Product(
-    id: 2,
-    name: 'Sizzling Pork T-Bone Steak',
-    description: 'Tender T-Bone steak with signature gravy.',
-    price: 280,
-    imagePath:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuASVSO6N3lzIbdlCDT85viSxOZiQKjWADlA5k7ymludjTdSCB7tqV0bZvXRba3-L4gemLyqy9PxmqnYMBnSsxb5yfI_XM-qajS5ZEnS1Am8OBu5uN8_smBFlDdy4xR0UNE8jDFJP8vNSRQcqqDSG4p-oDij5kCvWALcyBZVeuA1QdnqC9a6I5s9l2ba3Zjfe0xSPjMr0jLCAB1z-oJS5xBL9meeUeFsmiMgjQ96VoXotgHsy3Jl3d9NQIv1liJsKeu_sJec2rrkNziY',
-    stockQuantity: 30,
-    isActive: true,
-  ),
-  Product(
-    id: 3,
-    name: 'Sizzling Bulalo Steak',
-    description: 'Rich beef shank with simmering bone marrow gravy.',
-    price: 450,
-    imagePath:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCatSLXJ-mynm_AwjLXsdG9xKbMwziehShgiNtyXaX2NZEeZFhSXaTmHMgLuACAitSC3WZ0g_9lSTavvnqO4eKFlaC0pnnA9OngEMtRicl0vfSF2_t4WqzxTKxW-H-X0i_tppiClzEOZ-fAuu1ezCbRVOcdVdwZHokttY1ATDIO4BuA185dwrm0QDuPpYjQ7qD9ybH5bl0WPn1wHJ3S5pB6JuCOoocWTfZ95cB0Lfqx1KbjbUwqGJxkhwxmqypEJta64yq1PajT3oWC',
-    stockQuantity: 15,
-    isActive: true,
-  ),
-  Product(
-    id: 4,
-    name: 'Sizzling Chicken Inasal',
-    description: 'Chargrilled Bacolod-style chicken with garlic rice.',
-    price: 220,
-    imagePath:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuB6QEUONokTX7mi1M1Wrie14cxeoNfVq5HyIS1sLOLWKbzZyh6OfegCBaNeH6E7uS37ugVc6jjmILNzIrmvE0tpXkOBCDP29HO1WZL69MsOd6lpwp4oX6ezfDjuAsLMCu57vBpiHDupWu3yDATuk2k_HgpQMi23Y7mifgQKqPJhc0GqDXCCk1tPooIkFyBCXPiESBHm8HKF8cp1ctvD0RZ39YNVxKG_2cPaPyfryUGBbaoIHhqqhq5R9BflPtI6jMfzsP3W6QStlttx',
-    stockQuantity: 40,
-    isActive: true,
-  ),
-  Product(
-    id: 5,
-    name: 'Sizzling Beef Pepper Rice',
-    description: 'Peppery beef strips over garlic rice on cast iron.',
-    price: 195,
-    stockQuantity: 35,
-    isActive: true,
-  ),
-  Product(
-    id: 6,
-    name: 'Sizzling Chicken Inasal Platter',
-    description: 'Sharing platter of inasal for the barkada.',
-    price: 520,
-    stockQuantity: 20,
-    isActive: true,
-  ),
-  Product(
-    id: 7,
-    name: 'Sizzling Gambas Al Ajillo',
-    description: 'Garlic shrimp sizzler made for sharing.',
-    price: 320,
-    stockQuantity: 25,
-    isActive: true,
-  ),
-  Product(
-    id: 8,
-    name: 'Signature Red Iced Tea (1L)',
-    description: 'Chilled house-brewed red iced tea pitcher.',
-    price: 95,
-    imagePath:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCPuMIwhrcJTtw4asxssNVZ2VWGxMaovy2G1K8R0Ix8yDYIZmMquCCDp47-9iSZeRJZPGoqUA_gstmSpYFxDQdS1nDIkmXqLfi-tQLTneA4ORWkxGtLYbCbkjLJ2sZcAuvum0fGxFxM8i2GzRSAaFKYWHdOIp6HsbA9GRrg84sBVlnpzrm4YyuS53vG9_x_SOV-OQNPEsIkecPojkMz-8yFDwZ07jXZ3SnUf-A_tEyuljflrAP4mCwWgHiFNvHAbJt-LBV66MAiCwKl',
-    stockQuantity: 100,
-    isActive: true,
-  ),
-  Product(
-    id: 9,
-    name: 'Extra Garlic Rice',
-    description: 'Extra serving of toasted garlic rice.',
-    price: 45,
-    stockQuantity: 100,
-    isActive: true,
-  ),
-];

@@ -10,9 +10,14 @@ import '../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/menu_provider.dart';
 import '../providers/order_session_provider.dart';
+import '../utils/cavite_locations.dart';
 import '../utils/menu_category.dart';
 import '../widgets/banner_carousel.dart';
 import 'qr_scanner_screen.dart';
+
+import '../models/order_result.dart';
+import '../models/voucher.dart';
+import '../services/api_service.dart';
 
 final _currency = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 0);
 
@@ -20,115 +25,18 @@ typedef OpenMenuCallback = void Function({MenuCategory? category});
 
 final List<Map<String, dynamic>> _savedAddresses = [
   {
-    'title': 'Home - Bulihan, Silang',
-    'subtitle': 'Phase 3 Block 12, Bulihan, Silang, Cavite',
-    'icon': LucideIcons.house,
-    'mode': OrderMode.delivery,
-    'isBulihan': true,
-  },
-  {
-    'title': 'Office - Dasmariñas',
-    'subtitle': 'Aguinaldo Highway, Dasmariñas, Cavite',
-    'icon': LucideIcons.building,
-    'mode': OrderMode.delivery,
-    'isBulihan': false,
-  },
-  {
-    'title': 'Saddle Ranch Silang Main',
-    'subtitle': 'Bulihan, Silang, Cavite',
+    'title': 'Saddle Ranch Bulihan Main',
+    'subtitle': 'Aguinaldo Highway, Bulihan, Silang, Cavite',
     'icon': LucideIcons.mapPin,
     'mode': OrderMode.pickup,
     'isBulihan': true,
   },
-];
-
-final List<Map<String, dynamic>> _notifications = [
   {
-    'id': '1',
-    'title': 'Order #SR-10492 Sizzling!',
-    'body': 'Your Sizzling Pork Sisig and Garlic Rice are hot on the grill!',
-    'time': '2m ago',
-    'icon': LucideIcons.flame,
-    'isOrder': true,
-    'unread': true,
-  },
-  {
-    'id': '2',
-    'title': 'Rider En Route #SR-10381',
-    'body': 'Rider Marco is on his way with your Bulalo Steak Feast.',
-    'time': '25m ago',
-    'icon': LucideIcons.bike,
-    'isOrder': true,
-    'unread': true,
-  },
-  {
-    'id': '3',
-    'title': 'Voucher Unlocked!',
-    'body': 'Exclusive ₱100 OFF coupon added to your wallet.',
-    'time': '1h ago',
-    'icon': LucideIcons.ticket,
-    'isOrder': false,
-    'unread': true,
-  },
-];
-
-final List<Map<String, dynamic>> _vouchers = [
-  {
-    'id': 'v1',
-    'discount': '₱100 OFF',
-    'title': 'Sizzling Special',
-    'minSpend': 'Min. spend ₱500',
-    'code': 'SIZZLE100',
-    'expiry': 'Valid till Aug 31',
-    'claimed': false,
-    'color': const Color(0xFFFF6B00),
-  },
-  {
-    'id': 'v2',
-    'discount': '15% OFF',
-    'title': 'Barkada Feast',
-    'minSpend': 'Min. spend ₱1,200',
-    'code': 'BARKADA15',
-    'expiry': 'Platter orders only',
-    'claimed': false,
-    'color': const Color(0xFFD84315),
-  },
-  {
-    'id': 'v3',
-    'discount': 'FREE DRINK',
-    'title': 'Red Iced Tea Pitcher',
-    'minSpend': 'On any meal deal',
-    'code': 'FREEDRINK',
-    'expiry': 'Valid today only',
-    'claimed': false,
-    'color': const Color(0xFF0288D1),
-  },
-];
-
-final List<Map<String, dynamic>> _recentlyOrdered = [
-  {
-    'name': 'Sizzling Pork Sisig',
-    'price': 280.0,
-    'rating': 4.8,
-    'category': MenuCategory.filipino,
-    'image':
-        'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    'name': 'Bulalo Steak Feast',
-    'price': 490.0,
-    'rating': 4.7,
-    'category': MenuCategory.filipino,
-    'image':
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCatSLXJ-mynm_AwjLXsdG9xKbMwziehShgiNtyXaX2NZEeZFhSXaTmHMgLuACAitSC3WZ0g_9lSTavvnqO4eKFlaC0pnnA9OngEMtRicl0vfSF2_t4WqzxTKxW-H-X0i_tppiClzEOZ-fAuu1ezCbRVOcdVdwZHokttY1ATDIO4BuA185dwrm0QDuPpYjQ7qD9ybH5bl0WPn1wHJ3S5pB6JuCOoocWTfZ95cB0Lfqx1KbjbUwqGJxkhwxmqypEJta64yq1PajT3oWC',
-  },
-  {
-    'name': 'Sizzling Pepper Rice',
-    'price': 220.0,
-    'rating': 4.9,
-    'category': MenuCategory.sizzling,
-    'image':
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuDt2cP7W6u7Hw-wJCWrbYiEh20Z4b79UCpbKxmmyVbQzw0xlTklDnEKOpEzeymppd9l-ODs0TOelRWM0iLgwF8K_OKfXIBpTO8lSH0yyxPtaMCTQrzQ4ykSkJPDryw9S9IBB1wNoeHFGtHcQDy4MEVr0_tUDss7SKe1fe58XBlXeql1nJ1D2J0zJ0ZFO4qRm213kO813mLEdYdUMjsTD0J2PtB7cz_0FmmDHccmacBmhMyp7a_fJ7teNVsG3sgWyfW24O1p08mnUE9t',
+    'title': 'Saddle Ranch Dasmariñas Branch',
+    'subtitle': 'Sampaloc 1, Dasmariñas City, Cavite',
+    'icon': LucideIcons.building,
+    'mode': OrderMode.pickup,
+    'isBulihan': false,
   },
 ];
 
@@ -142,9 +50,47 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final ApiService _api = ApiService();
   final TextEditingController _searchCtrl = TextEditingController();
-  String _selectedLocation = 'Home - Bulihan, Silang';
-  int _unreadNotifications = 3;
+  String _selectedLocation = 'Saddle Ranch Bulihan Main';
+  int _unreadNotifications = 0;
+  List<Voucher> _vouchers = [];
+  List<OrderResult> _activeOrders = [];
+  bool _loadingVouchers = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVouchers();
+    _loadActiveOrders();
+  }
+
+  Future<void> _loadVouchers() async {
+    setState(() => _loadingVouchers = true);
+    try {
+      final list = await _api.fetchCustomerVouchers();
+      if (mounted) {
+        setState(() {
+          _vouchers = list;
+          _loadingVouchers = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingVouchers = false);
+    }
+  }
+
+  Future<void> _loadActiveOrders() async {
+    try {
+      final list = await _api.trackOrders(all: true);
+      if (mounted) {
+        setState(() {
+          _activeOrders = list;
+          _unreadNotifications = list.where((o) => o.status != 'completed' && o.status != 'cancelled').length;
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -153,8 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAddAddressDialog(BuildContext parentCtx) {
-    final cityCtrl = TextEditingController(text: 'Silang, Cavite');
-    final barangayCtrl = TextEditingController();
+    String selectedCity = defaultCity;
+    String selectedBarangay = defaultBarangay;
     final streetCtrl = TextEditingController();
     final labelCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -169,9 +115,16 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (dialogCtx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final combined =
-                '${barangayCtrl.text} ${cityCtrl.text} ${streetCtrl.text}'.toLowerCase();
-            final isBulihan = combined.contains('bulihan');
+            final isBulihan = isBulihanArea(
+              city: selectedCity,
+              barangay: selectedBarangay,
+              fullAddress: streetCtrl.text,
+            );
+
+            final availableBarangays = caviteLocations[selectedCity] ?? [defaultBarangay];
+            if (!availableBarangays.contains(selectedBarangay)) {
+              selectedBarangay = availableBarangays.first;
+            }
 
             return Padding(
               padding: EdgeInsets.only(
@@ -254,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   const SizedBox(height: 3),
                                   Text(
                                     isBulihan
-                                        ? 'Your address qualifies for 100% Free Delivery!'
+                                        ? 'Your location qualifies for 100% Free Delivery!'
                                         : 'Deliveries outside Bulihan Area are dispatched via Lalamove (customer pays actual rider delivery fee upon arrival).',
                                     style: GoogleFonts.inter(
                                       color: isBulihan
@@ -272,33 +225,105 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Municipality / City
-                      TextFormField(
-                        controller: cityCtrl,
-                        onChanged: (_) => setDialogState(() {}),
-                        decoration: const InputDecoration(
-                          labelText: 'Municipality / City *',
-                          hintText: 'e.g. Silang, Dasmariñas, Tagaytay',
-                          prefixIcon: Icon(LucideIcons.building2),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Please enter municipality or city'
-                            : null,
+                      // Region & Province Badges (Read-Only)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF7F7F8),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE5E5E7)),
+                              ),
+                              child: Text(
+                                'Region: IV-A',
+                                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppleColors.mutedText),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF7F7F8),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE5E5E7)),
+                              ),
+                              child: Text(
+                                'Province: Cavite',
+                                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppleColors.mutedText),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
 
-                      // Barangay / Zone
-                      TextFormField(
-                        controller: barangayCtrl,
-                        onChanged: (_) => setDialogState(() {}),
+                      // Municipality / City Dropdown
+                      DropdownButtonFormField<String>(
+                        key: ValueKey('city_$selectedCity'),
+                        initialValue: selectedCity,
+                        decoration: const InputDecoration(
+                          labelText: 'Municipality / City *',
+                          prefixIcon: Icon(LucideIcons.building2),
+                        ),
+                        items: caviteLocations.keys.map((city) {
+                          return DropdownMenuItem(
+                            value: city,
+                            child: Text(city, style: GoogleFonts.inter(fontSize: 14)),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setDialogState(() {
+                              selectedCity = val;
+                              selectedBarangay = caviteLocations[val]!.first;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Barangay / Zone Dropdown
+                      DropdownButtonFormField<String>(
+                        key: ValueKey('brgy_${selectedCity}_$selectedBarangay'),
+                        initialValue: selectedBarangay,
                         decoration: const InputDecoration(
                           labelText: 'Barangay / Zone *',
-                          hintText: 'e.g. Bulihan, Biga 1, San Vicente',
                           prefixIcon: Icon(LucideIcons.mapPin),
                         ),
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Please enter barangay or zone'
-                            : null,
+                        items: availableBarangays.map((brgy) {
+                          final isBulihanBrgy = bulihanBarangays.contains(brgy);
+                          return DropdownMenuItem(
+                            value: brgy,
+                            child: Row(
+                              children: [
+                                Text(brgy, style: GoogleFonts.inter(fontSize: 14)),
+                                if (isBulihanBrgy) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE8F5E9),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'FREE',
+                                      style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32)),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setDialogState(() => selectedBarangay = val);
+                          }
+                        },
                       ),
                       const SizedBox(height: 12),
 
@@ -308,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onChanged: (_) => setDialogState(() {}),
                         decoration: const InputDecoration(
                           labelText: 'Street Address / House No. / Landmark *',
-                          hintText: 'e.g. Blk 14 Lot 2 Phase 3, near Church',
+                          hintText: 'e.g. Blk 26 Lot 17 Narra St.',
                           prefixIcon: Icon(LucideIcons.home),
                         ),
                         validator: (v) => v == null || v.trim().isEmpty
@@ -334,16 +359,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ElevatedButton(
                           onPressed: () {
                             if (formKey.currentState?.validate() == true) {
+                              final fullAddress = buildDeliveryAddressString(
+                                streetAddress: streetCtrl.text.trim(),
+                                barangay: selectedBarangay,
+                                city: selectedCity,
+                              );
                               final title = labelCtrl.text.trim().isNotEmpty
                                   ? labelCtrl.text.trim()
-                                  : '${barangayCtrl.text.trim()}, ${cityCtrl.text.trim()}';
-                              final subtitle =
-                                  '${streetCtrl.text.trim()}, ${barangayCtrl.text.trim()}, ${cityCtrl.text.trim()}';
+                                  : '$selectedBarangay, $selectedCity';
 
                               setState(() {
                                 _savedAddresses.insert(0, {
                                   'title': title,
-                                  'subtitle': subtitle,
+                                  'subtitle': fullAddress,
                                   'icon': LucideIcons.mapPin,
                                   'mode': OrderMode.delivery,
                                   'isBulihan': isBulihan,
@@ -398,6 +426,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showLocationPicker() {
     final session = context.read<OrderSessionProvider>();
+    final menu = context.read<MenuProvider>();
 
     showModalBottomSheet(
       context: context,
@@ -407,75 +436,113 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
+        return StatefulBuilder(
+          builder: (context, setPickerState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Select Delivery Location',
-                  style: GoogleFonts.domine(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: AppleColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                ..._savedAddresses.map((addr) {
-                  final title = addr['title'] as String;
-                  final subtitle = addr['subtitle'] as String;
-                  final icon = addr['icon'] as IconData;
-                  final mode = addr['mode'] as OrderMode;
-                  final isBulihan = addr['isBulihan'] as bool? ?? false;
-                  final isSelected = !session.isDineIn && _selectedLocation == title;
+                    const SizedBox(height: 16),
 
-                  return _LocationOptionTile(
-                    icon: icon,
-                    title: title,
-                    subtitle: subtitle,
-                    selected: isSelected,
-                    deliveryTag: isBulihan ? 'FREE Delivery' : 'Lalamove',
-                    isFreeDelivery: isBulihan,
-                    onTap: () {
-                      setState(() => _selectedLocation = title);
-                      session.setMode(mode);
-                      Navigator.pop(ctx);
-                    },
-                  );
-                }),
-                if (session.isDineIn)
-                  _LocationOptionTile(
-                    icon: LucideIcons.qrCode,
-                    title: 'Table ${session.tableNumber} (Dine-In)',
-                    subtitle: 'Locked table session',
-                    selected: true,
-                    onTap: () => Navigator.pop(ctx),
-                  ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showAddAddressDialog(ctx),
-                    icon: const Icon(LucideIcons.plus, size: 16, color: AppleColors.primaryAccent),
-                    label: const Text('Add New Delivery Location'),
-                  ),
+                    // Branch Switcher (Bulihan vs Dasmariñas)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Branch Menu',
+                          style: GoogleFonts.domine(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: AppleColors.textPrimary,
+                          ),
+                        ),
+                        SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(value: 'Bulihan', label: Text('Bulihan')),
+                            ButtonSegment(value: 'Dasma', label: Text('Dasma')),
+                          ],
+                          selected: {session.branch},
+                          onSelectionChanged: (val) {
+                            final newBranch = val.first;
+                            session.setBranch(newBranch);
+                            menu.setBranch(newBranch);
+                            setPickerState(() {});
+                          },
+                          style: ButtonStyle(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    Text(
+                      'Select Delivery / Fulfillment Location',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppleColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    ..._savedAddresses.map((addr) {
+                      final title = addr['title'] as String;
+                      final subtitle = addr['subtitle'] as String;
+                      final icon = addr['icon'] as IconData;
+                      final mode = addr['mode'] as OrderMode;
+                      final isBulihan = addr['isBulihan'] as bool? ?? false;
+                      final isSelected = !session.isDineIn && _selectedLocation == title;
+
+                      return _LocationOptionTile(
+                        icon: icon,
+                        title: title,
+                        subtitle: subtitle,
+                        selected: isSelected,
+                        deliveryTag: isBulihan ? 'FREE Delivery' : 'Lalamove',
+                        isFreeDelivery: isBulihan,
+                        onTap: () {
+                          setState(() => _selectedLocation = title);
+                          session.setMode(mode);
+                          Navigator.pop(ctx);
+                        },
+                      );
+                    }),
+                    if (session.isDineIn)
+                      _LocationOptionTile(
+                        icon: LucideIcons.qrCode,
+                        title: 'Table ${session.tableNumber} (Dine-In)',
+                        subtitle: 'Locked table session',
+                        selected: true,
+                        onTap: () => Navigator.pop(ctx),
+                      ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showAddAddressDialog(ctx),
+                        icon: const Icon(LucideIcons.plus, size: 16, color: AppleColors.primaryAccent),
+                        label: const Text('Add New Delivery Location'),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -525,98 +592,107 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          setState(() {
-                            _unreadNotifications = 0;
-                            for (var n in _notifications) {
-                              n['unread'] = false;
-                            }
-                          });
+                          setState(() => _unreadNotifications = 0);
                           Navigator.pop(ctx);
                         },
-                        child: const Text('Mark all read'),
+                        child: const Text('Dismiss'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Expanded(
-                    child: ListView.separated(
-                      controller: controller,
-                      itemCount: _notifications.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final notif = _notifications[index];
-                        final isUnread = notif['unread'] as bool;
-
-                        return Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: isUnread
-                                ? AppleColors.primaryAccent.withValues(alpha: 0.06)
-                                : const Color(0xFFF9F9FB),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isUnread
-                                  ? AppleColors.primaryAccent.withValues(alpha: 0.25)
-                                  : const Color(0xFFEEEEEE),
+                    child: _activeOrders.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(LucideIcons.bellOff, size: 40, color: AppleColors.mutedText),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No active order notifications',
+                                  style: GoogleFonts.inter(fontSize: 14, color: AppleColors.mutedText),
+                                ),
+                              ],
                             ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
+                          )
+                        : ListView.separated(
+                            controller: controller,
+                            itemCount: _activeOrders.length,
+                            separatorBuilder: (_, _) => const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final order = _activeOrders[index];
+                              final isPreparing = order.status == 'preparing';
+
+                              return Container(
+                                padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: AppleColors.primaryAccent.withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
+                                  color: isPreparing
+                                      ? AppleColors.primaryAccent.withValues(alpha: 0.06)
+                                      : const Color(0xFFF9F9FB),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isPreparing
+                                        ? AppleColors.primaryAccent.withValues(alpha: 0.25)
+                                        : const Color(0xFFEEEEEE),
+                                  ),
                                 ),
-                                child: Icon(
-                                  notif['icon'] as IconData,
-                                  color: AppleColors.primaryAccent,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
+                                child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          notif['title'] as String,
-                                          style: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 14,
-                                            color: AppleColors.textPrimary,
-                                          ),
-                                        ),
-                                        Text(
-                                          notif['time'] as String,
-                                          style: GoogleFonts.inter(
-                                            color: AppleColors.mutedText,
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ],
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: AppleColors.primaryAccent.withValues(alpha: 0.12),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        isPreparing ? LucideIcons.flame : LucideIcons.receipt,
+                                        color: AppleColors.primaryAccent,
+                                        size: 20,
+                                      ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      notif['body'] as String,
-                                      style: GoogleFonts.inter(
-                                        color: AppleColors.textBody,
-                                        fontSize: 12,
-                                        height: 1.3,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Order ${order.orderNumber}',
+                                                style: GoogleFonts.inter(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 14,
+                                                  color: AppleColors.textPrimary,
+                                                ),
+                                              ),
+                                              Text(
+                                                order.createdAt ?? 'Active',
+                                                style: GoogleFonts.inter(
+                                                  color: AppleColors.mutedText,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${order.statusLabel} • ${order.orderType.toUpperCase()} (${order.branch} branch)',
+                                            style: GoogleFonts.inter(
+                                              color: AppleColors.textBody,
+                                              fontSize: 12,
+                                              height: 1.3,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ],
               ),
@@ -637,11 +713,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final userName = user?.fullName.isNotEmpty == true
         ? user!.fullName
-        : 'John Daniel';
+        : 'Guest';
 
     final displayLocation = session.isDineIn
         ? 'Table ${session.tableNumber} (Dine-In)'
         : _selectedLocation;
+
+    final popularProducts = menu.products;
 
     return Scaffold(
       backgroundColor: AppleColors.scaffoldBackground,
@@ -650,7 +728,13 @@ class _HomeScreenState extends State<HomeScreen> {
         child: RefreshIndicator(
           color: AppleColors.primaryAccent,
           backgroundColor: Colors.white,
-          onRefresh: menu.load,
+          onRefresh: () async {
+            await Future.wait([
+              menu.load(),
+              _loadVouchers(),
+              _loadActiveOrders(),
+            ]);
+          },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
@@ -669,7 +753,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             : null,
                         child: user?.photoUrl == null || user!.photoUrl!.isEmpty
                             ? Text(
-                                userName[0].toUpperCase(),
+                                userName.isNotEmpty ? userName[0].toUpperCase() : 'S',
                                 style: GoogleFonts.inter(
                                   fontWeight: FontWeight.bold,
                                   color: AppleColors.primaryAccent,
@@ -695,73 +779,60 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    session.isDineIn ? 'Dine-In Location' : 'Deliver to',
+                                    session.isDineIn ? 'Dine-In Seat' : 'Fulfillment Branch / Address',
                                     style: GoogleFonts.inter(
                                       color: AppleColors.mutedText,
-                                      fontSize: 12,
                                       fontWeight: FontWeight.w500,
+                                      fontSize: 12,
                                     ),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: AppleColors.mutedText,
+                                    size: 16,
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      displayLocation,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.inter(
-                                        color: AppleColors.textPrimary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down,
-                                    color: AppleColors.primaryAccent,
-                                    size: 20,
-                                  ),
-                                ],
+                              Text(
+                                displayLocation,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  color: AppleColors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      // Functional Notification Bell Button
+                      const SizedBox(width: 8),
+                      // Notification Bell
                       Stack(
                         children: [
                           IconButton(
+                            icon: const Icon(LucideIcons.bell, size: 22, color: AppleColors.textPrimary),
                             onPressed: _showNotificationsSheet,
-                            icon: const Icon(
-                              LucideIcons.bell,
-                              color: AppleColors.textPrimary,
-                              size: 22,
-                            ),
+                            tooltip: 'Order Notifications',
                           ),
                           if (_unreadNotifications > 0)
                             Positioned(
-                              right: 10,
-                              top: 10,
+                              right: 8,
+                              top: 8,
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
                                   color: AppleColors.primaryAccent,
                                   shape: BoxShape.circle,
                                 ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
-                                ),
                                 child: Text(
                                   '$_unreadNotifications',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.inter(
+                                  style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 9,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -774,54 +845,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Full Width Search Bar ("Search menu...")
+              // Search Bar
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Container(
-                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFEEEEEE)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      border: Border.all(color: const Color(0xFFE5E5E7)),
                     ),
                     child: TextField(
                       controller: _searchCtrl,
-                      onChanged: (val) {
-                        menu.setSearch(val);
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Search menu...',
-                        hintStyle: GoogleFonts.inter(
-                          color: AppleColors.mutedText,
-                          fontSize: 14,
-                        ),
-                        prefixIcon: const Icon(
-                          LucideIcons.search,
-                          color: AppleColors.mutedText,
-                          size: 20,
-                        ),
+                      decoration: const InputDecoration(
+                        hintText: 'Search food or menu...',
+                        prefixIcon: Icon(LucideIcons.search, size: 20, color: AppleColors.mutedText),
                         border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                        contentPadding: EdgeInsets.symmetric(vertical: 14),
                       ),
+                      onSubmitted: (q) {
+                        menu.setSearch(q);
+                        widget.onOpenMenu();
+                      },
                     ),
                   ),
                 ),
               ),
-
-              // Category Icons (Below Search) - Sizzling, Filipino Cousines, Barkada, Rice and Drinks
+              // Category Icons (Below Search) - Sizzling, Filipino Cuisines, Barkada, Rice and Drinks
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -831,7 +885,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => widget.onOpenMenu(category: MenuCategory.sizzling),
                       ),
                       _CategoryCard(
-                        title: 'Filipino Cousines',
+                        title: 'Filipino Cuisines',
                         iconWidget: const Icon(LucideIcons.utensilsCrossed, color: Color(0xFF2E7D32), size: 26),
                         onTap: () => widget.onOpenMenu(category: MenuCategory.filipino),
                       ),
@@ -859,30 +913,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Recently Ordered Section
+              // Sizzling Menu Highlights Section (Loaded from Database)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                   child: Row(
                     children: [
                       Text(
-                        'Recently Ordered',
+                        'Sizzling Highlights',
                         style: GoogleFonts.inter(
                           color: AppleColors.textPrimary,
                           fontWeight: FontWeight.w800,
                           fontSize: 18,
-                        ),
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () => widget.onOpenMenu(),
-                        child: Text(
-                          'See all',
-                          style: GoogleFonts.inter(
-                            color: AppleColors.primaryAccent,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
                         ),
                       ),
                     ],
@@ -892,100 +934,115 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(
                 child: SizedBox(
                   height: 195,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _recentlyOrdered.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 14),
-                    itemBuilder: (context, index) {
-                      final item = _recentlyOrdered[index];
-                      return SizedBox(
-                        width: 155,
-                        child: GestureDetector(
-                          onTap: () => widget.onOpenMenu(category: item['category'] as MenuCategory),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFF0F0F0)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                  child: CachedNetworkImage(
-                                    imageUrl: item['image'] as String,
-                                    height: 105,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    placeholder: (_, _) => Container(color: AppleColors.cardSurface),
-                                    errorWidget: (_, _, _) => Container(
-                                      color: AppleColors.cardSurface,
-                                      child: const Icon(Icons.fastfood, color: AppleColors.mutedText),
-                                    ),
+                  child: popularProducts.isEmpty
+                      ? Center(
+                          child: menu.loading
+                              ? const CircularProgressIndicator(color: AppleColors.primaryAccent)
+                              : Text('No menu items available', style: GoogleFonts.inter(color: AppleColors.mutedText)),
+                        )
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: popularProducts.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 14),
+                          itemBuilder: (context, index) {
+                            final item = popularProducts[index];
+                            final price = item.priceForBranch(session.branch);
+
+                            return SizedBox(
+                              width: 155,
+                              child: GestureDetector(
+                                onTap: () => widget.onOpenMenu(),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFFF0F0F0)),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.04),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(10),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        item['name'] as String,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13,
-                                          color: AppleColors.textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            _currency.format(item['price']),
-                                            style: GoogleFonts.inter(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 13,
-                                              color: AppleColors.textPrimary,
-                                            ),
-                                          ),
-                                          Row(
-                                            children: [
-                                              const Icon(Icons.star, color: Colors.amber, size: 14),
-                                              const SizedBox(width: 2),
-                                              Text(
-                                                '${item['rating']}',
-                                                style: GoogleFonts.inter(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 12,
-                                                  color: AppleColors.mutedText,
+                                      ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                        child: item.imagePath != null && item.imagePath!.isNotEmpty
+                                            ? CachedNetworkImage(
+                                                imageUrl: item.imagePath!,
+                                                height: 105,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                                placeholder: (_, _) => Container(color: AppleColors.cardSurface),
+                                                errorWidget: (_, _, _) => Container(
+                                                  color: AppleColors.cardSurface,
+                                                  child: const Icon(Icons.fastfood, color: AppleColors.mutedText),
                                                 ),
+                                              )
+                                            : Container(
+                                                height: 105,
+                                                color: AppleColors.cardSurface,
+                                                child: const Center(child: Icon(Icons.restaurant, color: AppleColors.mutedText)),
                                               ),
-                                            ],
-                                          ),
-                                        ],
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.inter(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 13,
+                                                color: AppleColors.textPrimary,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  _currency.format(price),
+                                                  style: GoogleFonts.inter(
+                                                    fontWeight: FontWeight.w800,
+                                                    fontSize: 13,
+                                                    color: AppleColors.textPrimary,
+                                                  ),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                                  decoration: BoxDecoration(
+                                                    color: AppleColors.primaryAccent.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    'Stock: ${item.stockForBranch(session.branch)}',
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: AppleColors.primaryAccent,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ),
 
@@ -1052,7 +1109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Vouchers Section directly below "How are you ordering"
+              // Vouchers Section directly below "How are you ordering" (Loaded from Database)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 26, 16, 12),
@@ -1071,37 +1128,42 @@ class _HomeScreenState extends State<HomeScreen> {
                 sliver: SliverToBoxAdapter(
                   child: SizedBox(
                     height: 110,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _vouchers.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 14),
-                      itemBuilder: (context, index) {
-                        final v = _vouchers[index];
-                        final isClaimed = v['claimed'] as bool;
+                    child: _vouchers.isEmpty
+                        ? Container(
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _loadingVouchers
+                                ? const CircularProgressIndicator(color: AppleColors.primaryAccent)
+                                : Text('No vouchers available at the moment.', style: GoogleFonts.inter(color: AppleColors.mutedText)),
+                          )
+                        : ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _vouchers.length,
+                            separatorBuilder: (_, _) => const SizedBox(width: 14),
+                            itemBuilder: (context, index) {
+                              final v = _vouchers[index];
 
-                        return _TicketVoucherCard(
-                          discount: v['discount'] as String,
-                          title: v['title'] as String,
-                          minSpend: v['minSpend'] as String,
-                          code: v['code'] as String,
-                          expiry: v['expiry'] as String,
-                          claimed: isClaimed,
-                          accentColor: v['color'] as Color,
-                          onClaim: () {
-                            Clipboard.setData(ClipboardData(text: v['code'] as String));
-                            setState(() {
-                              v['claimed'] = true;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Voucher code ${v['code']} copied & applied!'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                              return _TicketVoucherCard(
+                                discount: v.discountLabel,
+                                title: v.code,
+                                minSpend: v.minSpend > 0 ? 'Min. ₱${v.minSpend.toInt()}' : 'No min. spend',
+                                code: v.code,
+                                expiry: v.branch == 'all' ? 'All Branches' : '${v.branch} branch',
+                                claimed: v.isUsed,
+                                accentColor: index % 2 == 0 ? const Color(0xFFFF6B00) : const Color(0xFF0288D1),
+                                onClaim: () {
+                                  Clipboard.setData(ClipboardData(text: v.code));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Voucher code "${v.code}" copied to clipboard!'),
+                                      duration: const Duration(seconds: 2),
+                                      backgroundColor: AppleColors.primaryAccent,
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                   ),
                 ),
               ),

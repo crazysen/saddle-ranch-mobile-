@@ -13,13 +13,21 @@ class MenuProvider extends ChangeNotifier {
   List<Product> _products = [];
   List<PromoBanner> _banners = [];
   MenuCategory _selectedCategory = MenuCategory.all;
+  String _branch = 'Bulihan';
   String _searchQuery = '';
   bool _loading = false;
   String? _error;
 
   List<Product> get products => _products;
-  List<PromoBanner> get banners => _banners;
+  List<PromoBanner> get banners {
+    return _banners.where((b) {
+      if (b.branch == 'all') return true;
+      return b.branch.toLowerCase().contains(_branch.toLowerCase());
+    }).toList();
+  }
+
   MenuCategory get selectedCategory => _selectedCategory;
+  String get branch => _branch;
   String get searchQuery => _searchQuery;
   bool get loading => _loading;
   String? get error => _error;
@@ -37,6 +45,13 @@ class MenuProvider extends ChangeNotifier {
           .toList();
     }
     return list;
+  }
+
+  void setBranch(String branch) {
+    if (_branch != branch) {
+      _branch = branch;
+      notifyListeners();
+    }
   }
 
   Future<void> load() async {

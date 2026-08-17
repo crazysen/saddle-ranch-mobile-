@@ -123,7 +123,7 @@ class AccountScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Active session authenticated on this device. Offline mock mode enabled for zero-latency UI testing.',
+                    'Active session authenticated with Saddle Ranch Cloud Database (https://saddle-ranch-web.onrender.com).',
                     style: GoogleFonts.inter(
                       color: AppleColors.mutedText,
                       fontSize: 12,
