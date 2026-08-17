@@ -18,6 +18,120 @@ final _currency = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalD
 
 typedef OpenMenuCallback = void Function({MenuCategory? category});
 
+final List<Map<String, dynamic>> _savedAddresses = [
+  {
+    'title': 'Home - Bulihan, Silang',
+    'subtitle': 'Phase 3 Block 12, Bulihan, Silang, Cavite',
+    'icon': LucideIcons.house,
+    'mode': OrderMode.delivery,
+    'isBulihan': true,
+  },
+  {
+    'title': 'Office - Dasmariñas',
+    'subtitle': 'Aguinaldo Highway, Dasmariñas, Cavite',
+    'icon': LucideIcons.building,
+    'mode': OrderMode.delivery,
+    'isBulihan': false,
+  },
+  {
+    'title': 'Saddle Ranch Silang Main',
+    'subtitle': 'Bulihan, Silang, Cavite',
+    'icon': LucideIcons.mapPin,
+    'mode': OrderMode.pickup,
+    'isBulihan': true,
+  },
+];
+
+final List<Map<String, dynamic>> _notifications = [
+  {
+    'id': '1',
+    'title': 'Order #SR-10492 Sizzling!',
+    'body': 'Your Sizzling Pork Sisig and Garlic Rice are hot on the grill!',
+    'time': '2m ago',
+    'icon': LucideIcons.flame,
+    'isOrder': true,
+    'unread': true,
+  },
+  {
+    'id': '2',
+    'title': 'Rider En Route #SR-10381',
+    'body': 'Rider Marco is on his way with your Bulalo Steak Feast.',
+    'time': '25m ago',
+    'icon': LucideIcons.bike,
+    'isOrder': true,
+    'unread': true,
+  },
+  {
+    'id': '3',
+    'title': 'Voucher Unlocked!',
+    'body': 'Exclusive ₱100 OFF coupon added to your wallet.',
+    'time': '1h ago',
+    'icon': LucideIcons.ticket,
+    'isOrder': false,
+    'unread': true,
+  },
+];
+
+final List<Map<String, dynamic>> _vouchers = [
+  {
+    'id': 'v1',
+    'discount': '₱100 OFF',
+    'title': 'Sizzling Special',
+    'minSpend': 'Min. spend ₱500',
+    'code': 'SIZZLE100',
+    'expiry': 'Valid till Aug 31',
+    'claimed': false,
+    'color': const Color(0xFFFF6B00),
+  },
+  {
+    'id': 'v2',
+    'discount': '15% OFF',
+    'title': 'Barkada Feast',
+    'minSpend': 'Min. spend ₱1,200',
+    'code': 'BARKADA15',
+    'expiry': 'Platter orders only',
+    'claimed': false,
+    'color': const Color(0xFFD84315),
+  },
+  {
+    'id': 'v3',
+    'discount': 'FREE DRINK',
+    'title': 'Red Iced Tea Pitcher',
+    'minSpend': 'On any meal deal',
+    'code': 'FREEDRINK',
+    'expiry': 'Valid today only',
+    'claimed': false,
+    'color': const Color(0xFF0288D1),
+  },
+];
+
+final List<Map<String, dynamic>> _recentlyOrdered = [
+  {
+    'name': 'Sizzling Pork Sisig',
+    'price': 280.0,
+    'rating': 4.8,
+    'category': MenuCategory.filipino,
+    'image':
+        'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    'name': 'Bulalo Steak Feast',
+    'price': 490.0,
+    'rating': 4.7,
+    'category': MenuCategory.filipino,
+    'image':
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuCatSLXJ-mynm_AwjLXsdG9xKbMwziehShgiNtyXaX2NZEeZFhSXaTmHMgLuACAitSC3WZ0g_9lSTavvnqO4eKFlaC0pnnA9OngEMtRicl0vfSF2_t4WqzxTKxW-H-X0i_tppiClzEOZ-fAuu1ezCbRVOcdVdwZHokttY1ATDIO4BuA185dwrm0QDuPpYjQ7qD9ybH5bl0WPn1wHJ3S5pB6JuCOoocWTfZ95cB0Lfqx1KbjbUwqGJxkhwxmqypEJta64yq1PajT3oWC',
+  },
+  {
+    'name': 'Sizzling Pepper Rice',
+    'price': 220.0,
+    'rating': 4.9,
+    'category': MenuCategory.sizzling,
+    'image':
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuDt2cP7W6u7Hw-wJCWrbYiEh20Z4b79UCpbKxmmyVbQzw0xlTklDnEKOpEzeymppd9l-ODs0TOelRWM0iLgwF8K_OKfXIBpTO8lSH0yyxPtaMCTQrzQ4ykSkJPDryw9S9IBB1wNoeHFGtHcQDy4MEVr0_tUDss7SKe1fe58XBlXeql1nJ1D2J0zJ0ZFO4qRm213kO813mLEdYdUMjsTD0J2PtB7cz_0FmmDHccmacBmhMyp7a_fJ7teNVsG3sgWyfW24O1p08mnUE9t',
+  },
+];
+
 class HomeScreen extends StatefulWidget {
   final OpenMenuCallback onOpenMenu;
 
@@ -29,119 +143,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
-  String _selectedLocation = 'Home - BGC, Taguig';
+  String _selectedLocation = 'Home - Bulihan, Silang';
   int _unreadNotifications = 3;
-
-  final List<Map<String, dynamic>> _savedAddresses = [
-    {
-      'title': 'Home - BGC, Taguig',
-      'subtitle': '26th St, Bonifacio Global City',
-      'icon': LucideIcons.house,
-      'mode': OrderMode.delivery,
-    },
-    {
-      'title': 'Office - Ayala, Makati',
-      'subtitle': '12F Ayala Tower One, Makati City',
-      'icon': LucideIcons.building,
-      'mode': OrderMode.delivery,
-    },
-    {
-      'title': 'Saddle Ranch Tagaytay',
-      'subtitle': 'Aguinaldo Highway, Tagaytay City',
-      'icon': LucideIcons.mapPin,
-      'mode': OrderMode.pickup,
-    },
-  ];
-
-  static final List<Map<String, dynamic>> _notifications = [
-    {
-      'id': '1',
-      'title': 'Order #SR-10492 Sizzling!',
-      'body': 'Your Sizzling Pork Sisig and Garlic Rice are hot on the grill!',
-      'time': '2m ago',
-      'icon': LucideIcons.flame,
-      'isOrder': true,
-      'unread': true,
-    },
-    {
-      'id': '2',
-      'title': 'Rider En Route #SR-10381',
-      'body': 'Rider Marco is on his way with your Bulalo Steak Feast.',
-      'time': '25m ago',
-      'icon': LucideIcons.bike,
-      'isOrder': true,
-      'unread': true,
-    },
-    {
-      'id': '3',
-      'title': 'Voucher Unlocked!',
-      'body': 'Exclusive ₱100 OFF coupon added to your wallet.',
-      'time': '1h ago',
-      'icon': LucideIcons.ticket,
-      'isOrder': false,
-      'unread': true,
-    },
-  ];
-
-  static final List<Map<String, dynamic>> _vouchers = [
-    {
-      'id': 'v1',
-      'discount': '₱100 OFF',
-      'title': 'Sizzling Special',
-      'minSpend': 'Min. spend ₱500',
-      'code': 'SIZZLE100',
-      'expiry': 'Valid till Aug 31',
-      'claimed': false,
-      'color': const Color(0xFFFF6B00),
-    },
-    {
-      'id': 'v2',
-      'discount': '15% OFF',
-      'title': 'Barkada Feast',
-      'minSpend': 'Min. spend ₱1,200',
-      'code': 'BARKADA15',
-      'expiry': 'Platter orders only',
-      'claimed': false,
-      'color': const Color(0xFFD84315),
-    },
-    {
-      'id': 'v3',
-      'discount': 'FREE DRINK',
-      'title': 'Red Iced Tea Pitcher',
-      'minSpend': 'On any meal deal',
-      'code': 'FREEDRINK',
-      'expiry': 'Valid today only',
-      'claimed': false,
-      'color': const Color(0xFF0288D1),
-    },
-  ];
-
-  static final List<Map<String, dynamic>> _recentlyOrdered = [
-    {
-      'name': 'Sizzling Pork Sisig',
-      'price': 280.0,
-      'rating': 4.8,
-      'category': MenuCategory.filipino,
-      'image':
-          'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      'name': 'Bulalo Steak Feast',
-      'price': 490.0,
-      'rating': 4.7,
-      'category': MenuCategory.filipino,
-      'image':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCatSLXJ-mynm_AwjLXsdG9xKbMwziehShgiNtyXaX2NZEeZFhSXaTmHMgLuACAitSC3WZ0g_9lSTavvnqO4eKFlaC0pnnA9OngEMtRicl0vfSF2_t4WqzxTKxW-H-X0i_tppiClzEOZ-fAuu1ezCbRVOcdVdwZHokttY1ATDIO4BuA185dwrm0QDuPpYjQ7qD9ybH5bl0WPn1wHJ3S5pB6JuCOoocWTfZ95cB0Lfqx1KbjbUwqGJxkhwxmqypEJta64yq1PajT3oWC',
-    },
-    {
-      'name': 'Sizzling Pepper Rice',
-      'price': 220.0,
-      'rating': 4.9,
-      'category': MenuCategory.sizzling,
-      'image':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDt2cP7W6u7Hw-wJCWrbYiEh20Z4b79UCpbKxmmyVbQzw0xlTklDnEKOpEzeymppd9l-ODs0TOelRWM0iLgwF8K_OKfXIBpTO8lSH0yyxPtaMCTQrzQ4ykSkJPDryw9S9IBB1wNoeHFGtHcQDy4MEVr0_tUDss7SKe1fe58XBlXeql1nJ1D2J0zJ0ZFO4qRm213kO813mLEdYdUMjsTD0J2PtB7cz_0FmmDHccmacBmhMyp7a_fJ7teNVsG3sgWyfW24O1p08mnUE9t',
-    },
-  ];
 
   @override
   void dispose() {
@@ -150,8 +153,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAddAddressDialog(BuildContext parentCtx) {
+    final cityCtrl = TextEditingController(text: 'Silang, Cavite');
+    final barangayCtrl = TextEditingController();
+    final streetCtrl = TextEditingController();
     final labelCtrl = TextEditingController();
-    final detailsCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -162,104 +167,230 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (dialogCtx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
-          ),
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Add New Delivery Address',
-                  style: GoogleFonts.domine(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: AppleColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: labelCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Address Label (e.g. Condo, Grandma)',
-                    prefixIcon: Icon(LucideIcons.tag),
-                  ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Please enter a label' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: detailsCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Complete Address / Street / Unit',
-                    prefixIcon: Icon(LucideIcons.mapPin),
-                  ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Please enter complete address' : null,
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (formKey.currentState?.validate() == true) {
-                        final title = labelCtrl.text.trim();
-                        final subtitle = detailsCtrl.text.trim();
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final combined =
+                '${barangayCtrl.text} ${cityCtrl.text} ${streetCtrl.text}'.toLowerCase();
+            final isBulihan = combined.contains('bulihan');
 
-                        setState(() {
-                          _savedAddresses.insert(0, {
-                            'title': title,
-                            'subtitle': subtitle,
-                            'icon': LucideIcons.mapPin,
-                            'mode': OrderMode.delivery,
-                          });
-                          _selectedLocation = title;
-                        });
-
-                        context.read<OrderSessionProvider>().setMode(OrderMode.delivery);
-
-                        Navigator.pop(dialogCtx);
-                        Navigator.pop(parentCtx);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Address "$title" saved and selected!'),
-                            backgroundColor: AppleColors.primaryAccent,
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppleColors.primaryAccent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: Text(
-                      'Save & Deliver Here',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Add New Delivery Location',
+                        style: GoogleFonts.domine(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: AppleColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Live Dynamic Delivery Fee Banner
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isBulihan
+                              ? const Color(0xFFE8F5E9) // Soft Green
+                              : const Color(0xFFFFF3E0), // Soft Amber
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isBulihan
+                                ? const Color(0xFF81C784)
+                                : const Color(0xFFFFB74D),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              isBulihan ? LucideIcons.truck : LucideIcons.bike,
+                              color: isBulihan
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFFE65100),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isBulihan
+                                        ? 'FREE Delivery Fee (Bulihan Area, Silang)'
+                                        : 'Delivery via Lalamove',
+                                    style: GoogleFonts.inter(
+                                      color: isBulihan
+                                          ? const Color(0xFF1B5E20)
+                                          : const Color(0xFFBF360C),
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    isBulihan
+                                        ? 'Your address qualifies for 100% Free Delivery!'
+                                        : 'Deliveries outside Bulihan Area are dispatched via Lalamove (customer pays actual rider delivery fee upon arrival).',
+                                    style: GoogleFonts.inter(
+                                      color: isBulihan
+                                          ? const Color(0xFF2E7D32)
+                                          : const Color(0xFFD84315),
+                                      fontSize: 11,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Municipality / City
+                      TextFormField(
+                        controller: cityCtrl,
+                        onChanged: (_) => setDialogState(() {}),
+                        decoration: const InputDecoration(
+                          labelText: 'Municipality / City *',
+                          hintText: 'e.g. Silang, Dasmariñas, Tagaytay',
+                          prefixIcon: Icon(LucideIcons.building2),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Please enter municipality or city'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Barangay / Zone
+                      TextFormField(
+                        controller: barangayCtrl,
+                        onChanged: (_) => setDialogState(() {}),
+                        decoration: const InputDecoration(
+                          labelText: 'Barangay / Zone *',
+                          hintText: 'e.g. Bulihan, Biga 1, San Vicente',
+                          prefixIcon: Icon(LucideIcons.mapPin),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Please enter barangay or zone'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Street Address / House No. / Landmark *
+                      TextFormField(
+                        controller: streetCtrl,
+                        onChanged: (_) => setDialogState(() {}),
+                        decoration: const InputDecoration(
+                          labelText: 'Street Address / House No. / Landmark *',
+                          hintText: 'e.g. Blk 14 Lot 2 Phase 3, near Church',
+                          prefixIcon: Icon(LucideIcons.home),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Please enter street address or landmark'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Address Label (Optional)
+                      TextFormField(
+                        controller: labelCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Address Label (Optional)',
+                          hintText: 'e.g. Home, Work, Apartment',
+                          prefixIcon: Icon(LucideIcons.tag),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (formKey.currentState?.validate() == true) {
+                              final title = labelCtrl.text.trim().isNotEmpty
+                                  ? labelCtrl.text.trim()
+                                  : '${barangayCtrl.text.trim()}, ${cityCtrl.text.trim()}';
+                              final subtitle =
+                                  '${streetCtrl.text.trim()}, ${barangayCtrl.text.trim()}, ${cityCtrl.text.trim()}';
+
+                              setState(() {
+                                _savedAddresses.insert(0, {
+                                  'title': title,
+                                  'subtitle': subtitle,
+                                  'icon': LucideIcons.mapPin,
+                                  'mode': OrderMode.delivery,
+                                  'isBulihan': isBulihan,
+                                });
+                                _selectedLocation = title;
+                              });
+
+                              context.read<OrderSessionProvider>().setMode(OrderMode.delivery);
+
+                              Navigator.pop(dialogCtx);
+                              Navigator.pop(parentCtx);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    isBulihan
+                                        ? 'Address "$title" saved with FREE delivery!'
+                                        : 'Address "$title" saved (Lalamove delivery).',
+                                  ),
+                                  backgroundColor: isBulihan
+                                      ? const Color(0xFF2E7D32)
+                                      : AppleColors.primaryAccent,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppleColors.primaryAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            'Save & Deliver Here',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -308,6 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   final subtitle = addr['subtitle'] as String;
                   final icon = addr['icon'] as IconData;
                   final mode = addr['mode'] as OrderMode;
+                  final isBulihan = addr['isBulihan'] as bool? ?? false;
                   final isSelected = !session.isDineIn && _selectedLocation == title;
 
                   return _LocationOptionTile(
@@ -315,6 +447,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: title,
                     subtitle: subtitle,
                     selected: isSelected,
+                    deliveryTag: isBulihan ? 'FREE Delivery' : 'Lalamove',
+                    isFreeDelivery: isBulihan,
                     onTap: () {
                       setState(() => _selectedLocation = title);
                       session.setMode(mode);
@@ -336,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => _showAddAddressDialog(ctx),
                     icon: const Icon(LucideIcons.plus, size: 16, color: AppleColors.primaryAccent),
-                    label: const Text('Add New Address'),
+                    label: const Text('Add New Delivery Location'),
                   ),
                 ),
               ],
@@ -1118,6 +1252,8 @@ class _LocationOptionTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool selected;
+  final String? deliveryTag;
+  final bool? isFreeDelivery;
   final VoidCallback onTap;
 
   const _LocationOptionTile({
@@ -1125,6 +1261,8 @@ class _LocationOptionTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.selected,
+    this.deliveryTag,
+    this.isFreeDelivery,
     required this.onTap,
   });
 
@@ -1162,13 +1300,41 @@ class _LocationOptionTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppleColors.textPrimary,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              title,
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: AppleColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          if (deliveryTag != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isFreeDelivery == true
+                                    ? const Color(0xFFE8F5E9)
+                                    : const Color(0xFFFFF3E0),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                deliveryTag!,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: isFreeDelivery == true
+                                      ? const Color(0xFF2E7D32)
+                                      : const Color(0xFFE65100),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
