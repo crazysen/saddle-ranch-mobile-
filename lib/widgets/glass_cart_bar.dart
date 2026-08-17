@@ -35,13 +35,8 @@ class AlwaysOnViewCartBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.40),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-            BoxShadow(
               color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 10,
+              blurRadius: 16,
               offset: const Offset(0, 4),
             ),
           ],

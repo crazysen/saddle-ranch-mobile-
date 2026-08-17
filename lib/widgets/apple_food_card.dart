@@ -88,13 +88,6 @@ class AppleFoodCard extends StatelessWidget {
                             ? () {
                                 AppleTheme.hapticFeedback();
                                 cart.add(product);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('${product.name} added to cart'),
-                                    duration: const Duration(milliseconds: 700),
-                                    backgroundColor: const Color(0xFFF59E0B),
-                                  ),
-                                );
                               }
                             : null,
                         child: Container(
@@ -105,8 +98,8 @@ class AppleFoodCard extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
-                                blurRadius: 6,
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
                             ],
@@ -131,7 +124,7 @@ class AppleFoodCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
                 // Dish Title in Domine bold font
                 Text(
@@ -145,7 +138,7 @@ class AppleFoodCard extends StatelessWidget {
                     height: 1.25,
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 6),
 
                 // Price tag in bold Saddle Ranch Amber (NO stock indicator)
                 Text(

@@ -703,6 +703,177 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showOrderModeModal(BuildContext context) {
+    final session = context.read<OrderSessionProvider>();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'How would you like to order?',
+                style: GoogleFonts.domine(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Select your fulfillment preference to view available sizzling items.',
+                style: GoogleFonts.workSans(color: const Color(0xFF6B7280), fontSize: 13),
+              ),
+              const SizedBox(height: 18),
+
+              // 1. Dine-In
+              _buildOrderModeTile(
+                ctx: ctx,
+                title: 'Dine-In',
+                subtitle: 'Order from your table or scan QR code',
+                icon: LucideIcons.qrCode,
+                selected: session.mode == OrderMode.dineIn,
+                onTap: () {
+                  session.setMode(OrderMode.dineIn);
+                  Navigator.pop(ctx);
+                  widget.onOpenMenu();
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // 2. Pick-Up
+              _buildOrderModeTile(
+                ctx: ctx,
+                title: 'Pick-Up',
+                subtitle: 'Order ahead and pick up at the counter',
+                icon: LucideIcons.shoppingBag,
+                selected: session.mode == OrderMode.pickup,
+                onTap: () {
+                  session.setMode(OrderMode.pickup);
+                  Navigator.pop(ctx);
+                  widget.onOpenMenu();
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // 3. Delivery
+              _buildOrderModeTile(
+                ctx: ctx,
+                title: 'Delivery',
+                subtitle: 'Delivered directly to your Cavite doorstep',
+                icon: LucideIcons.bike,
+                selected: session.mode == OrderMode.delivery,
+                onTap: () {
+                  session.setMode(OrderMode.delivery);
+                  Navigator.pop(ctx);
+                  widget.onOpenMenu();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOrderModeTile({
+    required BuildContext ctx,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: selected ? const Color(0xFFFFF7ED) : const Color(0xFFF9FAFB),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () {
+          AppleTheme.hapticFeedback();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? const Color(0xFFF59E0B) : const Color(0xFFE5E7EB),
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFFF59E0B) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected ? const Color(0xFFF59E0B) : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: selected ? Colors.white : const Color(0xFFF59E0B),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.workSans(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: const Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.workSans(
+                        fontSize: 12,
+                        color: const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                selected ? Icons.radio_button_checked : Icons.chevron_right,
+                color: selected ? const Color(0xFFF59E0B) : const Color(0xFF9CA3AF),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final menu = context.watch<MenuProvider>();
@@ -845,30 +1016,87 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Search Bar
+              // Search Bar (70%) + Order Button (30%)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE5E5E7)),
-                    ),
-                    child: TextField(
-                      controller: _searchCtrl,
-                      decoration: const InputDecoration(
-                        hintText: 'Search food or menu...',
-                        prefixIcon: Icon(LucideIcons.search, size: 20, color: AppleColors.mutedText),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 14),
+                  child: Row(
+                    children: [
+                      // Search Bar (70%)
+                      Expanded(
+                        flex: 7,
+                        child: Container(
+                          height: 50,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: TextField(
+                            controller: _searchCtrl,
+                            style: GoogleFonts.workSans(fontSize: 14, color: const Color(0xFF1F2937)),
+                            decoration: InputDecoration(
+                              hintText: 'Search food or menu...',
+                              hintStyle: GoogleFonts.workSans(color: const Color(0xFF9CA3AF), fontSize: 13),
+                              prefixIcon: const Icon(LucideIcons.search, size: 18, color: Color(0xFF9CA3AF)),
+                              prefixIconConstraints: const BoxConstraints(minWidth: 30),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onSubmitted: (q) {
+                              menu.setSearch(q);
+                              widget.onOpenMenu();
+                            },
+                          ),
+                        ),
                       ),
-                      onSubmitted: (q) {
-                        menu.setSearch(q);
-                        widget.onOpenMenu();
-                      },
-                    ),
+                      const SizedBox(width: 10),
+
+                      // Order Button (30%)
+                      Expanded(
+                        flex: 3,
+                        child: SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: () => _showOrderModeModal(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF59E0B),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(LucideIcons.utensilsCrossed, size: 15, color: Colors.white),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Order',
+                                  style: GoogleFonts.workSans(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

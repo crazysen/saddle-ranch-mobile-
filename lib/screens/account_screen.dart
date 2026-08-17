@@ -1,14 +1,127 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
+import '../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../theme/apple_theme.dart';
 
-class AccountScreen extends StatelessWidget {
+class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
+
+  @override
+  State<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends State<AccountScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameCtrl;
+  late TextEditingController _phoneCtrl;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthProvider>();
+    _nameCtrl = TextEditingController(text: auth.user?.fullName ?? '');
+    _phoneCtrl = TextEditingController(text: auth.user?.phone ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+    AppleTheme.hapticFeedback();
+
+    setState(() => _isSaving = true);
+    final auth = context.read<AuthProvider>();
+    await auth.completeProfile(
+      fullName: _nameCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
+    );
+
+    if (mounted) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(LucideIcons.checkCircle, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'Profile updated successfully!',
+                style: GoogleFonts.workSans(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    AppleTheme.hapticFeedback();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          'Log Out',
+          style: GoogleFonts.domine(
+            color: const Color(0xFF1F2937),
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to log out of your Saddle Ranch account?',
+          style: GoogleFonts.workSans(
+            color: const Color(0xFF4B5563),
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.workSans(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF43F5E),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(
+              'Log Out',
+              style: GoogleFonts.workSans(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      await context.read<AuthProvider>().signOut();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,43 +132,40 @@ class AccountScreen extends StatelessWidget {
       backgroundColor: AppleColors.scaffoldBackground,
       appBar: AppBar(
         title: Text(
-          'Account',
+          'Profile',
           style: GoogleFonts.domine(
             fontWeight: FontWeight.bold,
             fontSize: 20,
-            color: AppleColors.textPrimary,
+            color: const Color(0xFF1F2937),
           ),
         ),
-        backgroundColor: AppleColors.pureWhite,
+        backgroundColor: Colors.white.withValues(alpha: 0.95),
+        surfaceTintColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.logOut, color: AppleColors.danger, size: 20),
-            tooltip: 'Log Out',
-            onPressed: () {
-              AppleTheme.hapticFeedback();
-              context.read<AuthProvider>().signOut();
-            },
-          ),
-        ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
         children: [
-          // Profile User Surface Card
+          // Profile User Avatar & Email Card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppleColors.pureWhite,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppleColors.cardBorder),
-              boxShadow: AppleColors.ambientShadow,
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: AppleColors.primaryAccent.withValues(alpha: 0.12),
+                  backgroundColor: const Color(0xFFFFF7ED),
                   backgroundImage: user?.photoUrl != null && user!.photoUrl!.isNotEmpty
                       ? CachedNetworkImageProvider(user.photoUrl!)
                       : null,
@@ -63,7 +173,7 @@ class AccountScreen extends StatelessWidget {
                       ? Text(
                           (user?.fullName.isNotEmpty == true ? user!.fullName[0] : 'S').toUpperCase(),
                           style: GoogleFonts.domine(
-                            color: AppleColors.primaryAccent,
+                            color: const Color(0xFFF59E0B),
                             fontWeight: FontWeight.bold,
                             fontSize: 22,
                           ),
@@ -76,152 +186,213 @@ class AccountScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user?.fullName.isNotEmpty == true ? user!.fullName : 'Saddle Ranch Guest',
+                        user?.fullName.isNotEmpty == true ? user!.fullName : 'Saddle Ranch Customer',
                         style: GoogleFonts.domine(
-                          color: AppleColors.textPrimary,
+                          color: const Color(0xFF1F2937),
                           fontWeight: FontWeight.bold,
                           fontSize: 17,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        user?.email ?? 'Not signed in',
-                        style: GoogleFonts.inter(
-                          color: AppleColors.mutedText,
+                        user?.email ?? 'customer@saddleranch.ph',
+                        style: GoogleFonts.workSans(
+                          color: const Color(0xFF6B7280),
                           fontSize: 13,
                         ),
                       ),
-                      if (user?.phone != null && user!.phone!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          user.phone!,
-                          style: GoogleFonts.inter(
-                            color: AppleColors.mutedText,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Edit Profile Form Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Personal Information',
+                    style: GoogleFonts.domine(
+                      color: const Color(0xFF1F2937),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Update your account display name and mobile number for your delivery orders.',
+                    style: GoogleFonts.workSans(color: const Color(0xFF6B7280), fontSize: 13),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Full Name Field (letters only)
+                  Text(
+                    'Full Name',
+                    style: GoogleFonts.workSans(
+                      color: const Color(0xFF374151),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: _nameCtrl,
+                    style: GoogleFonts.workSans(color: const Color(0xFF1F2937), fontSize: 14),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s\.\-']")),
+                    ],
+                    decoration: InputDecoration(
+                      hintText: 'Enter your full name',
+                      prefixIcon: const Icon(LucideIcons.user, size: 18, color: Color(0xFF9CA3AF)),
+                      fillColor: const Color(0xFFF9FAFB),
+                      filled: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 1.5),
+                      ),
+                    ),
+                    validator: (v) {
+                      final val = (v ?? '').trim();
+                      if (val.isEmpty) return 'Full name is required';
+                      if (!RegExp(r"^[a-zA-Z\s\.\-']+$").hasMatch(val)) {
+                        return 'Full name must contain letters only';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Phone Number Field (09XXXXXXXXX)
+                  Text(
+                    'Contact Number',
+                    style: GoogleFonts.workSans(
+                      color: const Color(0xFF374151),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: _phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    style: GoogleFonts.workSans(color: const Color(0xFF1F2937), fontSize: 14),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(11),
+                    ],
+                    decoration: InputDecoration(
+                      hintText: '09XXXXXXXXX (11 digits)',
+                      prefixIcon: const Icon(LucideIcons.phone, size: 18, color: Color(0xFF9CA3AF)),
+                      fillColor: const Color(0xFFF9FAFB),
+                      filled: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 1.5),
+                      ),
+                    ),
+                    validator: (v) {
+                      final val = (v ?? '').trim();
+                      if (val.isEmpty) return 'Contact number is required';
+                      if (!val.startsWith('09') || val.length != 11) {
+                        return 'Must start with 09 and have 11 digits';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Save Changes Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _saveProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF59E0B),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
+                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(
+                              'Save Changes',
+                              style: GoogleFonts.workSans(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),
 
-          // User Info Box
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppleColors.cardSurface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppleColors.cardBorder),
-            ),
-            child: Row(
-              children: [
-                const Icon(LucideIcons.shieldCheck, size: 20, color: AppleColors.primaryAccent),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Active session authenticated with Saddle Ranch Cloud Database (https://saddle-ranch-web.onrender.com).',
-                    style: GoogleFonts.inter(
-                      color: AppleColors.mutedText,
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Prominent Apple-styled Log Out Button
+          // Logout Button
           SizedBox(
             width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                AppleTheme.hapticFeedback();
-                context.read<AuthProvider>().signOut();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppleColors.danger,
-                foregroundColor: Colors.white,
+            height: 50,
+            child: OutlinedButton.icon(
+              onPressed: _handleLogout,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFF43F5E),
+                side: const BorderSide(color: Color(0xFFFECDD3), width: 1.5),
+                backgroundColor: const Color(0xFFFFF1F2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                elevation: 0,
               ),
-              icon: const Icon(LucideIcons.logOut, size: 18),
+              icon: const Icon(LucideIcons.logOut, size: 18, color: Color(0xFFF43F5E)),
               label: Text(
                 'Log Out',
-                style: GoogleFonts.inter(
+                style: GoogleFonts.workSans(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Reset testing button
-          Center(
-            child: TextButton.icon(
-              onPressed: () async {
-                AppleTheme.hapticFeedback();
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    backgroundColor: AppleColors.pureWhite,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    title: Text(
-                      'Reset account session?',
-                      style: GoogleFonts.domine(
-                        color: AppleColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    content: Text(
-                      'This clears saved account session credentials on this device.',
-                      style: GoogleFonts.inter(
-                        color: AppleColors.mutedText,
-                        fontSize: 14,
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: Text(
-                          'Cancel',
-                          style: GoogleFonts.inter(color: AppleColors.mutedText),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppleColors.danger,
-                        ),
-                        child: Text(
-                          'Reset',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirm == true && context.mounted) {
-                  context.read<AuthProvider>().clearLocalAccount();
-                }
-              },
-              icon: const Icon(LucideIcons.refreshCw, size: 14, color: AppleColors.mutedText),
-              label: Text(
-                'Reset test state',
-                style: GoogleFonts.inter(
-                  color: AppleColors.mutedText,
-                  fontSize: 13,
+                  fontSize: 15,
+                  color: const Color(0xFFF43F5E),
                 ),
               ),
             ),
