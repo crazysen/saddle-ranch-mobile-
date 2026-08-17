@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme/app_theme.dart';
@@ -15,6 +16,7 @@ import 'screens/auth_gate.dart';
 import 'screens/cart_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
+import 'screens/orders_screen.dart';
 import 'theme/apple_theme.dart';
 import 'utils/deep_link_parser.dart';
 import 'utils/menu_category.dart';
@@ -97,7 +99,10 @@ class _MainShellState extends State<MainShell> {
     } else {
       context.read<MenuProvider>().setCategory(MenuCategory.all);
     }
-    setState(() => _index = 1);
+    // Navigate to full menu overlay or cart tab
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const MenuScreen()),
+    );
   }
 
   @override
@@ -112,13 +117,14 @@ class _MainShellState extends State<MainShell> {
 
     return Scaffold(
       backgroundColor: AppleColors.scaffoldBackground,
+      extendBody: true,
       body: Stack(
         children: [
           IndexedStack(
             index: _index,
             children: [
               HomeScreen(onOpenMenu: _openMenu),
-              const MenuScreen(),
+              const OrdersScreen(),
               const CartScreen(),
               const AccountScreen(),
             ],
@@ -128,62 +134,164 @@ class _MainShellState extends State<MainShell> {
             Positioned(
               left: 0,
               right: 0,
-              bottom: 0,
+              bottom: 90,
               child: GlassCartBar(
                 onTapViewCart: () {
                   setState(() => _index = 2);
                 },
               ),
             ),
+
+          // Custom Floating Bottom Navigation Bar matching mockup design
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: Container(
+              height: 72,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(36),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _NavItem(
+                    icon: LucideIcons.house,
+                    label: 'Home',
+                    selected: _index == 0,
+                    onTap: () {
+                      AppleTheme.hapticFeedback();
+                      setState(() => _index = 0);
+                    },
+                  ),
+                  _NavItem(
+                    icon: LucideIcons.receiptText,
+                    label: 'Orders',
+                    selected: _index == 1,
+                    onTap: () {
+                      AppleTheme.hapticFeedback();
+                      setState(() => _index = 1);
+                    },
+                  ),
+                  _NavItem(
+                    icon: LucideIcons.shoppingBag,
+                    label: 'Cart',
+                    badgeCount: cartCount,
+                    selected: _index == 2,
+                    onTap: () {
+                      AppleTheme.hapticFeedback();
+                      setState(() => _index = 2);
+                    },
+                  ),
+                  _NavItem(
+                    icon: LucideIcons.user,
+                    label: 'Profile',
+                    selected: _index == 3,
+                    onTap: () {
+                      AppleTheme.hapticFeedback();
+                      setState(() => _index = 3);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: AppleColors.pureWhite,
-        surfaceTintColor: AppleColors.pureWhite,
-        shadowColor: Colors.black12,
-        elevation: 8,
-        indicatorColor: AppleColors.primaryAccent.withValues(alpha: 0.15),
-        selectedIndex: _index,
-        onDestinationSelected: (i) {
-          AppleTheme.hapticFeedback();
-          setState(() => _index = i);
-        },
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-            color: selected ? AppleColors.primaryAccent : AppleColors.mutedText,
-          );
-        }),
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined, color: AppleColors.mutedText),
-            selectedIcon: Icon(Icons.home, color: AppleColors.primaryAccent),
-            label: 'Home',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.restaurant_menu_outlined, color: AppleColors.mutedText),
-            selectedIcon: Icon(Icons.restaurant_menu, color: AppleColors.primaryAccent),
-            label: 'Menu',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: cartCount > 0,
-              label: Text('$cartCount'),
-              child: const Icon(Icons.shopping_bag_outlined, color: AppleColors.mutedText),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final int badgeCount;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    this.badgeCount = 0,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppleColors.primaryAccent.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
             ),
-            selectedIcon: Badge(
-              isLabelVisible: cartCount > 0,
-              label: Text('$cartCount'),
-              child: const Icon(Icons.shopping_bag, color: AppleColors.primaryAccent),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: selected
+                      ? AppleColors.primaryAccent
+                      : AppleColors.mutedText,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppleColors.primaryAccent,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$badgeCount',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            label: 'Cart',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline, color: AppleColors.mutedText),
-            selectedIcon: Icon(Icons.person, color: AppleColors.primaryAccent),
-            label: 'Account',
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+              color: selected
+                  ? AppleColors.primaryAccent
+                  : AppleColors.mutedText,
+            ),
           ),
         ],
       ),
