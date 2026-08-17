@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../core/theme/app_theme.dart';
 import '../utils/menu_category.dart';
 
 class CategoryChips extends StatelessWidget {
@@ -16,7 +16,7 @@ class CategoryChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 44,
+      height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -29,15 +29,17 @@ class CategoryChips extends StatelessWidget {
             label: Text(category.label),
             selected: isSelected,
             onSelected: (_) => onSelected(category),
-            selectedColor: AppColors.amber,
-            backgroundColor: AppColors.surfaceAlt,
-            labelStyle: TextStyle(
-              color: isSelected ? AppColors.onAmber : AppColors.cream,
-              fontWeight: FontWeight.w800,
+            selectedColor: const Color(0xFFF59E0B),
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            labelStyle: GoogleFonts.workSans(
+              color: isSelected ? Colors.white : const Color(0xFF374151),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
               fontSize: 13,
             ),
             side: BorderSide(
-              color: isSelected ? AppColors.amber : AppColors.border,
+              color: isSelected ? const Color(0xFFF59E0B) : const Color(0xFFE5E7EB),
+              width: 1,
             ),
             showCheckmark: false,
           );

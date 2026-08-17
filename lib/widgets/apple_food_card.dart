@@ -9,7 +9,7 @@ import '../models/product.dart';
 import '../providers/cart_provider.dart';
 import '../theme/apple_theme.dart';
 
-final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 2);
+final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 0);
 
 class AppleFoodCard extends StatelessWidget {
   final Product product;
@@ -29,13 +29,13 @@ class AppleFoodCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF2C2C2E), width: 1),
+        border: Border.all(color: const Color(0xFFEEEEEE), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
@@ -50,7 +50,7 @@ class AppleFoodCard extends StatelessWidget {
           },
           borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -66,12 +66,12 @@ class AppleFoodCard extends StatelessWidget {
                                 imageUrl: product.imagePath!,
                                 fit: BoxFit.cover,
                                 placeholder: (_, _) => Container(
-                                  color: const Color(0xFF27272A),
+                                  color: const Color(0xFFF4F4F6),
                                   alignment: Alignment.center,
                                   child: const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFA000)),
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF59E0B)),
                                   ),
                                 ),
                                 errorWidget: (_, _, _) => _placeholder(),
@@ -92,7 +92,7 @@ class AppleFoodCard extends StatelessWidget {
                                   SnackBar(
                                     content: Text('${product.name} added to cart'),
                                     duration: const Duration(milliseconds: 700),
-                                    backgroundColor: const Color(0xFFFFA000),
+                                    backgroundColor: const Color(0xFFF59E0B),
                                   ),
                                 );
                               }
@@ -101,12 +101,12 @@ class AppleFoodCard extends StatelessWidget {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFA000),
+                            color: const Color(0xFFF59E0B),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.5),
-                                blurRadius: 4,
+                                color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                                blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
                             ],
@@ -115,8 +115,8 @@ class AppleFoodCard extends StatelessWidget {
                           child: inCartCount > 0
                               ? Text(
                                   '$inCartCount',
-                                  style: GoogleFonts.inter(
-                                    color: Colors.black,
+                                  style: GoogleFonts.workSans(
+                                    color: Colors.white,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 13,
                                   ),
@@ -124,7 +124,7 @@ class AppleFoodCard extends StatelessWidget {
                               : const Icon(
                                   LucideIcons.plus,
                                   size: 18,
-                                  color: Colors.black,
+                                  color: Colors.white,
                                 ),
                         ),
                       ),
@@ -139,7 +139,7 @@ class AppleFoodCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.domine(
-                    color: Colors.white,
+                    color: const Color(0xFF1F2937),
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     height: 1.25,
@@ -147,13 +147,13 @@ class AppleFoodCard extends StatelessWidget {
                 ),
                 const Spacer(),
 
-                // Price tag in bold yellow-orange Domine font (NO stock indicator)
+                // Price tag in bold Saddle Ranch Amber (NO stock indicator)
                 Text(
                   _peso.format(product.price),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.domine(
-                    color: const Color(0xFFFFA000),
+                    color: const Color(0xFFF59E0B),
                     fontWeight: FontWeight.w900,
                     fontSize: 15,
                   ),
@@ -168,12 +168,12 @@ class AppleFoodCard extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      color: const Color(0xFF27272A),
+      color: const Color(0xFFF4F4F6),
       alignment: Alignment.center,
       child: const Icon(
-        Icons.local_fire_department,
-        color: Color(0xFFFFA000),
-        size: 36,
+        Icons.fastfood,
+        color: Color(0xFFF59E0B),
+        size: 32,
       ),
     );
   }

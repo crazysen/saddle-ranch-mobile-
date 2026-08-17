@@ -6,19 +6,26 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/app_theme.dart';
 import '../models/promo_banner.dart';
 import '../theme/apple_theme.dart';
+import '../utils/menu_category.dart';
 
 /// Promotion Banner Carousel matching Saddle Ranch Web 1:1
 class BannerCarousel extends StatefulWidget {
   final List<PromoBanner> banners;
   final VoidCallback? onSeeAll;
   final VoidCallback? onBannerTap;
+  final ValueChanged<MenuCategory>? onPromoTap;
+  final Duration? autoPlayInterval;
 
   const BannerCarousel({
     super.key,
     required this.banners,
     this.onSeeAll,
     this.onBannerTap,
+    this.onPromoTap,
+    this.autoPlayInterval,
   });
+
+  static const placeholders = <PromoBanner>[];
 
   @override
   State<BannerCarousel> createState() => _BannerCarouselState();
@@ -37,7 +44,8 @@ class _BannerCarouselState extends State<BannerCarousel> {
 
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+    final interval = widget.autoPlayInterval ?? const Duration(seconds: 5);
+    _timer = Timer.periodic(interval, (_) {
       final bannerCount = widget.banners.isNotEmpty ? widget.banners.length : 1;
       if (_pageController.hasClients && bannerCount > 1) {
         final next = (_currentIndex + 1) % bannerCount;
