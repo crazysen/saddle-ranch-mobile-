@@ -99,7 +99,7 @@ class _MainShellState extends State<MainShell> {
     } else {
       context.read<MenuProvider>().setCategory(MenuCategory.all);
     }
-    // Navigate to full menu overlay or cart tab
+    // Navigate to full menu overlay
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const MenuScreen()),
     );
@@ -114,6 +114,7 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final cartCount = context.watch<CartProvider>().itemCount;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       backgroundColor: AppleColors.scaffoldBackground,
@@ -134,7 +135,7 @@ class _MainShellState extends State<MainShell> {
             Positioned(
               left: 0,
               right: 0,
-              bottom: 90,
+              bottom: 94 + bottomInset,
               child: GlassCartBar(
                 onTapViewCart: () {
                   setState(() => _index = 2);
@@ -142,11 +143,11 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
 
-          // Custom Floating Bottom Navigation Bar matching mockup design
+          // Custom Floating Bottom Navigation Bar with Safe Area inset for Android & iOS
           Positioned(
             left: 16,
             right: 16,
-            bottom: 16,
+            bottom: 16 + bottomInset,
             child: Container(
               height: 72,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

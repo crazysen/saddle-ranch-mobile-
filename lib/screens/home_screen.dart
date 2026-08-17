@@ -68,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = context.watch<AuthProvider>();
     final session = context.watch<OrderSessionProvider>();
     final user = auth.user;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     final userName = user?.fullName.isNotEmpty == true
         ? user!.fullName
@@ -76,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppleColors.scaffoldBackground,
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           color: AppleColors.primaryAccent,
           backgroundColor: Colors.white,
@@ -182,84 +184,51 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Search Bar + Filter Icon Button
+              // Full Width Search Bar ("Search menu...") with Sort button removed
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFEEEEEE)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.03),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: TextField(
-                            controller: _searchCtrl,
-                            onChanged: (val) {
-                              menu.setSearch(val);
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Search foods, restaurants...',
-                              hintStyle: GoogleFonts.inter(
-                                color: AppleColors.mutedText,
-                                fontSize: 14,
-                              ),
-                              prefixIcon: const Icon(
-                                LucideIcons.search,
-                                color: AppleColors.mutedText,
-                                size: 20,
-                              ),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                            ),
-                          ),
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: _searchCtrl,
+                      onChanged: (val) {
+                        menu.setSearch(val);
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search menu...',
+                        hintStyle: GoogleFonts.inter(
+                          color: AppleColors.mutedText,
+                          fontSize: 14,
+                        ),
+                        prefixIcon: const Icon(
+                          LucideIcons.search,
+                          color: AppleColors.mutedText,
+                          size: 20,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 13),
                       ),
-                      const SizedBox(width: 10),
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFEEEEEE)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          onPressed: () {
-                            widget.onOpenMenu();
-                          },
-                          icon: const Icon(
-                            LucideIcons.slidersHorizontal,
-                            color: AppleColors.primaryAccent,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
 
-              // Category Icons (Below Search) - Sizzling, Filipino Cousines, Barkada, Rice and Drinks
+              // Category Icons (Below Search) - Sizzling, Filipino Cousines, Barkada (Rice bowl icon), Rice and Drinks
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
@@ -278,7 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       _CategoryCard(
                         title: 'Barkada',
-                        iconWidget: const Icon(LucideIcons.pizza, color: Color(0xFFD84315), size: 26),
+                        iconWidget: const Icon(Icons.rice_bowl, color: Color(0xFFD84315), size: 28),
                         onTap: () => widget.onOpenMenu(category: MenuCategory.barkada),
                       ),
                       _CategoryCard(
@@ -430,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // "How are you Ordering" Section (Replaces "Popular Place near you")
+              // "How are you Ordering" Section - Compact 1 Row with 3 Columns (Icons only, no images)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
@@ -461,58 +430,51 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    _OrderingModeCard(
-                      title: 'Saddle Ranch Dine-In',
-                      subtitle: '15-25 min • Table Service • Free WiFi',
-                      feeText: 'No waiting for a waiter',
-                      rating: 4.9,
-                      isVerified: true,
-                      selected: session.mode == OrderMode.dineIn,
-                      icon: LucideIcons.qrCode,
-                      imageUrl:
-                          'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _OrderingModeCard(
-                      title: 'Saddle Ranch Pick-Up',
-                      subtitle: '10-15 min • Skip the line',
-                      feeText: '₱0 Service Fee',
-                      rating: 4.8,
-                      isVerified: true,
-                      selected: session.mode == OrderMode.pickup,
-                      icon: LucideIcons.shoppingBag,
-                      imageUrl:
-                          'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
-                      onTap: () {
-                        session.setMode(OrderMode.pickup);
-                        widget.onOpenMenu();
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _OrderingModeCard(
-                      title: 'Saddle Ranch Express Delivery',
-                      subtitle: '25-35 min • Direct to your door',
-                      feeText: '₱49 Delivery fee',
-                      rating: 4.7,
-                      isVerified: true,
-                      selected: session.mode == OrderMode.delivery,
-                      icon: LucideIcons.bike,
-                      imageUrl:
-                          'https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=800&q=80',
-                      onTap: () {
-                        session.setMode(OrderMode.delivery);
-                        widget.onOpenMenu();
-                      },
-                    ),
-                  ]),
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 110 + bottomInset),
+                sliver: SliverToBoxAdapter(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _CompactOrderingCard(
+                          title: 'Dine-In',
+                          subtitle: 'Scan Table',
+                          icon: LucideIcons.qrCode,
+                          selected: session.mode == OrderMode.dineIn,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _CompactOrderingCard(
+                          title: 'Pick-Up',
+                          subtitle: 'Order Ahead',
+                          icon: LucideIcons.shoppingBag,
+                          selected: session.mode == OrderMode.pickup,
+                          onTap: () {
+                            session.setMode(OrderMode.pickup);
+                            widget.onOpenMenu();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _CompactOrderingCard(
+                          title: 'Delivery',
+                          subtitle: 'To Your Door',
+                          icon: LucideIcons.bike,
+                          selected: session.mode == OrderMode.delivery,
+                          onTap: () {
+                            session.setMode(OrderMode.delivery);
+                            widget.onOpenMenu();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -571,137 +533,81 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
-class _OrderingModeCard extends StatelessWidget {
+class _CompactOrderingCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final String feeText;
-  final double rating;
-  final bool isVerified;
-  final bool selected;
   final IconData icon;
-  final String imageUrl;
+  final bool selected;
   final VoidCallback onTap;
 
-  const _OrderingModeCard({
+  const _CompactOrderingCard({
     required this.title,
     required this.subtitle,
-    required this.feeText,
-    required this.rating,
-    required this.isVerified,
-    required this.selected,
     required this.icon,
-    required this.imageUrl,
+    required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      clipBehavior: Clip.antiAlias,
+      height: 90,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: selected
+            ? AppleColors.primaryAccent
+            : const Color(0xFFF7F7F8),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: selected ? AppleColors.primaryAccent : const Color(0xFFEEEEEE),
-          width: selected ? 2 : 1,
+          color: selected
+              ? AppleColors.primaryAccent
+              : const Color(0xFFE5E5E7),
         ),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          if (selected)
+            BoxShadow(
+              color: AppleColors.primaryAccent.withValues(alpha: 0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.cover,
+                Icon(
+                  icon,
+                  size: 24,
+                  color: selected ? Colors.white : AppleColors.primaryAccent,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: selected ? Colors.white : AppleColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                                color: AppleColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                          if (isVerified)
-                            const Icon(
-                              Icons.check_circle,
-                              color: AppleColors.primaryAccent,
-                              size: 16,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.inter(
-                          color: AppleColors.mutedText,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text(
-                            feeText,
-                            style: GoogleFonts.inter(
-                              color: AppleColors.mutedText,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF7F7F8),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.star, color: Colors.amber, size: 14),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '$rating',
-                                  style: GoogleFonts.inter(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    color: AppleColors.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: selected
+                        ? Colors.white.withValues(alpha: 0.88)
+                        : AppleColors.mutedText,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
                   ),
                 ),
               ],
