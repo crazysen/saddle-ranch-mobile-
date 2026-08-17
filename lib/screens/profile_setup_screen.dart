@@ -56,20 +56,23 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      setState(() => _nameError = 'Please enter your full name.');
+      if (mounted) setState(() => _nameError = 'Please enter your full name.');
       return;
     }
     if (!RegExp(r'^[a-zA-Z\s\.\-]+$').hasMatch(name)) {
-      setState(() => _nameError = 'Full name must contain letters only (no numbers).');
+      if (mounted) setState(() => _nameError = 'Full name must contain letters only (no numbers).');
       return;
     }
-    setState(() => _nameError = null);
+    if (mounted) setState(() => _nameError = null);
 
     if (_phoneCtrl.text.trim().isNotEmpty) {
       final phoneError = PhMobileNumber.validate(_phoneCtrl.text, required: true);
-      setState(() => _phoneError = phoneError);
+      if (mounted) setState(() => _phoneError = phoneError);
       if (phoneError != null) return;
     }
+
+    final orderSession = context.read<OrderSessionProvider>();
+    final auth = context.read<AuthProvider>();
 
     if (_streetCtrl.text.trim().isNotEmpty) {
       final fullAddr = buildDeliveryAddressString(
@@ -78,14 +81,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         city: _selectedCity,
       );
       final isBulihan = isBulihanArea(city: _selectedCity, barangay: _selectedBarangay);
-      context.read<OrderSessionProvider>().updateLocation(
+      orderSession.updateLocation(
         title: '$_selectedCity - $_selectedBarangay',
         subtitle: fullAddr,
         isBulihan: isBulihan,
       );
     }
 
-    await context.read<AuthProvider>().completeProfile(
+    await auth.completeProfile(
       fullName: name,
       phone: _phoneCtrl.text.trim().isNotEmpty ? PhMobileNumber.normalize(_phoneCtrl.text) : null,
     );
@@ -256,35 +259,32 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           ],
           const SizedBox(height: 28),
 
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: auth.busy ? null : _skip,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text('Skip for now'),
-                ),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: auth.busy ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5500),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  onPressed: auth.busy ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: auth.busy
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Save & Continue', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
+              child: auth.busy
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                    )
+                  : Text(
+                      'Save & Continue',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
           ),
         ],
       ),

@@ -20,7 +20,6 @@ import 'screens/orders_screen.dart';
 import 'theme/apple_theme.dart';
 import 'utils/deep_link_parser.dart';
 import 'utils/menu_category.dart';
-import 'widgets/glass_cart_bar.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -101,7 +100,13 @@ class _MainShellState extends State<MainShell> {
     }
     // Navigate to full menu overlay
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const MenuScreen()),
+      MaterialPageRoute(
+        builder: (_) => MenuScreen(
+          onOrderPlaced: () {
+            setState(() => _index = 1); // Navigate to Orders screen
+          },
+        ),
+      ),
     );
   }
 
@@ -130,18 +135,6 @@ class _MainShellState extends State<MainShell> {
               const AccountScreen(),
             ],
           ),
-          // Sticky Glass Cart Bar overlay when not on Cart screen
-          if (_index != 2 && cartCount > 0)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 94 + bottomInset,
-              child: GlassCartBar(
-                onTapViewCart: () {
-                  setState(() => _index = 2);
-                },
-              ),
-            ),
 
           // Custom Floating Bottom Navigation Bar with Safe Area inset for Android & iOS
           Positioned(

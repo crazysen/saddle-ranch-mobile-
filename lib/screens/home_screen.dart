@@ -904,12 +904,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Promotion Banner Carousel
+              // Promotion Banner Carousel (Live from Render database)
               SliverToBoxAdapter(
                 child: BannerCarousel(
                   banners: menu.banners,
                   onSeeAll: () => widget.onOpenMenu(),
-                  onPromoTap: (cat) => widget.onOpenMenu(category: cat),
+                  onBannerTap: () => widget.onOpenMenu(),
                 ),
               ),
 
@@ -1005,33 +1005,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                             ),
                                             const SizedBox(height: 6),
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Text(
-                                                  _currency.format(price),
-                                                  style: GoogleFonts.inter(
-                                                    fontWeight: FontWeight.w800,
-                                                    fontSize: 13,
-                                                    color: AppleColors.textPrimary,
-                                                  ),
-                                                ),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                                  decoration: BoxDecoration(
-                                                    color: AppleColors.primaryAccent.withValues(alpha: 0.1),
-                                                    borderRadius: BorderRadius.circular(4),
-                                                  ),
-                                                  child: Text(
-                                                    'Stock: ${item.stockForBranch(session.branch)}',
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: AppleColors.primaryAccent,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
+                                            Text(
+                                              _currency.format(price),
+                                              style: GoogleFonts.inter(
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 14,
+                                                color: AppleColors.primaryAccent,
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -1109,7 +1089,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Vouchers Section directly below "How are you ordering" (Loaded from Database)
+              // Vouchers Section filtered for the user's Location/Branch
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 26, 16, 12),
@@ -1126,44 +1106,62 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(16, 0, 16, 110 + bottomInset),
                 sliver: SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 110,
-                    child: _vouchers.isEmpty
-                        ? Container(
-                            alignment: Alignment.centerLeft,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: _loadingVouchers
-                                ? const CircularProgressIndicator(color: AppleColors.primaryAccent)
-                                : Text('No vouchers available at the moment.', style: GoogleFonts.inter(color: AppleColors.mutedText)),
-                          )
-                        : ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _vouchers.length,
-                            separatorBuilder: (_, _) => const SizedBox(width: 14),
-                            itemBuilder: (context, index) {
-                              final v = _vouchers[index];
+                  child: Builder(
+                    builder: (context) {
+                      final branchVouchers = _vouchers.where((v) {
+                        final b = v.branch.toLowerCase();
+                        final activeB = session.branch.toLowerCase();
+                        return b == 'all' ||
+                            b == activeB ||
+                            (activeB == 'bulihan' && b.contains('bulihan')) ||
+                            (activeB == 'dasma' && b.contains('dasma'));
+                      }).toList();
 
-                              return _TicketVoucherCard(
-                                discount: v.discountLabel,
-                                title: v.code,
-                                minSpend: v.minSpend > 0 ? 'Min. ₱${v.minSpend.toInt()}' : 'No min. spend',
-                                code: v.code,
-                                expiry: v.branch == 'all' ? 'All Branches' : '${v.branch} branch',
-                                claimed: v.isUsed,
-                                accentColor: index % 2 == 0 ? const Color(0xFFFF6B00) : const Color(0xFF0288D1),
-                                onClaim: () {
-                                  Clipboard.setData(ClipboardData(text: v.code));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Voucher code "${v.code}" copied to clipboard!'),
-                                      duration: const Duration(seconds: 2),
-                                      backgroundColor: AppleColors.primaryAccent,
-                                    ),
+                      return SizedBox(
+                        height: 110,
+                        child: branchVouchers.isEmpty
+                            ? Container(
+                                alignment: Alignment.centerLeft,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: _loadingVouchers
+                                    ? const CircularProgressIndicator(color: AppleColors.primaryAccent)
+                                    : Text(
+                                        'No vouchers available for ${session.branch} branch.',
+                                        style: GoogleFonts.inter(color: AppleColors.mutedText),
+                                      ),
+                              )
+                            : ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: branchVouchers.length,
+                                separatorBuilder: (_, _) => const SizedBox(width: 14),
+                                itemBuilder: (context, index) {
+                                  final v = branchVouchers[index];
+
+                                  return _TicketVoucherCard(
+                                    discount: v.discountLabel,
+                                    title: v.code,
+                                    minSpend: v.minSpend > 0 ? 'Min. ₱${v.minSpend.toInt()}' : 'No min. spend',
+                                    code: v.code,
+                                    expiry: v.branch.toLowerCase() == 'all'
+                                        ? 'All Branches'
+                                        : '${v.branch} branch only',
+                                    claimed: v.isUsed,
+                                    accentColor: index % 2 == 0 ? const Color(0xFFFF6B00) : const Color(0xFF0288D1),
+                                    onClaim: () {
+                                      Clipboard.setData(ClipboardData(text: v.code));
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Voucher code "${v.code}" copied to clipboard!'),
+                                          duration: const Duration(seconds: 2),
+                                          backgroundColor: AppleColors.primaryAccent,
+                                        ),
+                                      );
+                                    },
                                   );
                                 },
-                              );
-                            },
-                          ),
+                              ),
+                      );
+                    },
                   ),
                 ),
               ),

@@ -137,16 +137,6 @@ class ApiService {
 
     final body = _decode(response);
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final token = body['token'] ?? body['access_token'] ?? body['data']?['token'];
-      if (token != null && token.toString().isNotEmpty) {
-        await saveToken(token.toString());
-      } else {
-        // Automatically obtain session token via login
-        try {
-          final loginBody = await login(email: email, password: password);
-          return loginBody;
-        } catch (_) {}
-      }
       return body;
     }
 
@@ -315,6 +305,7 @@ class ApiService {
     String? deliveryAddress,
     String? deliveryNotes,
     String? voucherCode,
+    double? discountAmount,
   }) async {
     final headers = await _buildHeaders();
     final response = await _client.post(
@@ -331,6 +322,7 @@ class ApiService {
         if (deliveryAddress != null && deliveryAddress.isNotEmpty) 'delivery_address': deliveryAddress,
         if (deliveryNotes != null && deliveryNotes.isNotEmpty) 'delivery_notes': deliveryNotes,
         if (voucherCode != null && voucherCode.isNotEmpty) 'voucher_code': voucherCode,
+        if (discountAmount != null && discountAmount > 0) 'discount_amount': discountAmount,
       }),
     );
 

@@ -5,11 +5,14 @@ import '../core/theme/app_theme.dart';
 import '../providers/menu_provider.dart';
 import '../utils/menu_category.dart';
 import '../widgets/category_chips.dart';
+import '../widgets/glass_cart_bar.dart';
 import '../widgets/product_card.dart';
 import '../widgets/table_banner.dart';
 
 class MenuScreen extends StatelessWidget {
-  const MenuScreen({super.key});
+  final VoidCallback? onOrderPlaced;
+
+  const MenuScreen({super.key, this.onOrderPlaced});
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +83,8 @@ class MenuScreen extends StatelessWidget {
           ),
         ],
       ),
+      bottomNavigationBar: AlwaysOnViewCartBar(onOrderPlaced: onOrderPlaced),
     );
   }
 }
+

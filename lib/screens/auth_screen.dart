@@ -5,9 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
-import '../providers/order_session_provider.dart';
 import '../theme/apple_theme.dart';
-import '../utils/cavite_locations.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -91,10 +89,11 @@ class _AuthScreenState extends State<AuthScreen> {
     AppleTheme.hapticFeedback();
     if (!_signUpFormKey.currentState!.validate()) return;
 
+    final email = _signUpEmailController.text.trim();
     final auth = context.read<AuthProvider>();
     final success = await auth.register(
       name: _signUpNameController.text.trim(),
-      email: _signUpEmailController.text.trim(),
+      email: email,
       password: _signUpPasswordController.text,
       passwordConfirmation: _signUpConfirmPasswordController.text,
       phone: _signUpPhoneController.text.trim(),
@@ -102,7 +101,19 @@ class _AuthScreenState extends State<AuthScreen> {
 
     if (!mounted) return;
     if (success) {
-      _showOptionalLocationSheet();
+      _switchToLogin();
+      _loginEmailController.text = email;
+      _loginPasswordController.clear();
+      _signUpPasswordController.clear();
+      _signUpConfirmPasswordController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully! Please log in to continue.'),
+          backgroundColor: Color(0xFF2E7D32),
+          duration: Duration(seconds: 4),
+        ),
+      );
     } else if (auth.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -111,231 +122,6 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       );
     }
-  }
-
-  void _showOptionalLocationSheet() {
-    String selectedCity = defaultCity;
-    String selectedBarangay = defaultBarangay;
-    final streetCtrl = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (modalCtx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            final isBulihan = isBulihanArea(city: selectedCity, barangay: selectedBarangay);
-            final availableBarangays = caviteLocations[selectedCity] ?? [];
-
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Set Delivery Location',
-                        style: GoogleFonts.domine(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: _darkText,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(modalCtx),
-                        child: Text(
-                          'Skip for now',
-                          style: GoogleFonts.inter(
-                            color: _mutedText,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    'Optional: Choose your Cavite / Bulihan address for faster delivery checkout.',
-                    style: GoogleFonts.inter(color: _mutedText, fontSize: 12),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Dynamic Delivery Fee Banner
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isBulihan ? const Color(0xFFE8F5E9) : const Color(0xFFFFF3E0),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isBulihan ? const Color(0xFFA5D6A7) : const Color(0xFFFFCC80),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          isBulihan ? Icons.local_shipping : Icons.motorcycle,
-                          size: 20,
-                          color: isBulihan ? const Color(0xFF2E7D32) : const Color(0xFFE65100),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            isBulihan
-                                ? 'FREE Delivery Fee (Bulihan Area, Silang)'
-                                : 'Delivery via Lalamove: Deliveries outside Bulihan Area are dispatched via Lalamove.',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isBulihan ? const Color(0xFF1B5E20) : const Color(0xFFBF360C),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Municipality Dropdown
-                  Text('Municipality / City', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedCity,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      fillColor: _inputBackground,
-                      filled: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                    items: caviteLocations.keys.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() {
-                          selectedCity = val;
-                          selectedBarangay = caviteLocations[val]?.first ?? '';
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Barangay Dropdown
-                  Text('Barangay / Zone', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    initialValue: availableBarangays.contains(selectedBarangay) ? selectedBarangay : availableBarangays.firstOrNull,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      fillColor: _inputBackground,
-                      filled: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                    items: availableBarangays.map((b) {
-                      final isB = bulihanBarangays.contains(b);
-                      return DropdownMenuItem(
-                        value: b,
-                        child: Text(isB ? '$b (Bulihan)' : b),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() => selectedBarangay = val);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Street Address
-                  Text('Street Address / House No. / Landmark', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  TextFormField(
-                    controller: streetCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Block 10 Lot 5 Narra St.',
-                      fillColor: _inputBackground,
-                      filled: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(modalCtx),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: _cardBorder),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text('Skip for now'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            final fullAddr = buildDeliveryAddressString(
-                              streetAddress: streetCtrl.text,
-                              barangay: selectedBarangay,
-                              city: selectedCity,
-                            );
-                            context.read<OrderSessionProvider>().updateLocation(
-                              title: '$selectedCity - $selectedBarangay',
-                              subtitle: fullAddr,
-                              isBulihan: isBulihan,
-                            );
-                            Navigator.pop(modalCtx);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _primaryOrange,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text('Save & Continue', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   @override

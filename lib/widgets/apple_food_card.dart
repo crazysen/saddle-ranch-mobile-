@@ -24,13 +24,21 @@ class AppleFoodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final cartItem = cart.items.where((i) => i.product.id == product.id).firstOrNull;
+    final inCartCount = cartItem?.quantity ?? 0;
 
     return Container(
       decoration: BoxDecoration(
-        color: AppleColors.pureWhite,
+        color: const Color(0xFF1C1C1E),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppleColors.cardBorder, width: 1),
-        boxShadow: AppleColors.ambientShadow,
+        border: Border.all(color: const Color(0xFF2C2C2E), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -46,78 +54,36 @@ class AppleFoodCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // High-res food image with subtle corner rounding (Radius 16)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 10,
-                    child: product.imagePath != null && product.imagePath!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: product.imagePath!,
-                            fit: BoxFit.cover,
-                            placeholder: (_, _) => Container(
-                              color: AppleColors.cardSurface,
-                              alignment: Alignment.center,
-                              child: const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            ),
-                            errorWidget: (_, _, _) => _placeholder(),
-                          )
-                        : _placeholder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Dish Title in Domine bold font
-                Text(
-                  product.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.domine(
-                    color: AppleColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    height: 1.25,
-                  ),
-                ),
-                const SizedBox(height: 4),
-
-                // Description truncated cleanly in Inter font
-                Text(
-                  product.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    color: AppleColors.mutedText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    height: 1.35,
-                  ),
-                ),
-                const Spacer(),
-
-                // Bottom Row: Price tag in bold orange Domine font next to a pill-shaped + Add button
-                Row(
+                // High-res food image with subtle corner rounding
+                Stack(
                   children: [
-                    Expanded(
-                      child: Text(
-                        _peso.format(product.price),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.domine(
-                          color: AppleColors.primaryAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 11,
+                        child: product.imagePath != null && product.imagePath!.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: product.imagePath!,
+                                fit: BoxFit.cover,
+                                placeholder: (_, _) => Container(
+                                  color: const Color(0xFF27272A),
+                                  alignment: Alignment.center,
+                                  child: const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFA000)),
+                                  ),
+                                ),
+                                errorWidget: (_, _, _) => _placeholder(),
+                              )
+                            : _placeholder(),
                       ),
                     ),
-                    Material(
-                      color: product.inStock ? AppleColors.primaryAccent : AppleColors.cardBorder,
-                      borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
+                    // Circular '+' or quantity badge on the bottom right of the image
+                    Positioned(
+                      right: 6,
+                      bottom: 6,
+                      child: GestureDetector(
                         onTap: product.inStock
                             ? () {
                                 AppleTheme.hapticFeedback();
@@ -125,37 +91,72 @@ class AppleFoodCard extends StatelessWidget {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('${product.name} added to cart'),
-                                    duration: const Duration(milliseconds: 900),
+                                    duration: const Duration(milliseconds: 700),
+                                    backgroundColor: const Color(0xFFFFA000),
                                   ),
                                 );
                               }
                             : null,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                LucideIcons.plus,
-                                size: 14,
-                                color: product.inStock ? Colors.white : AppleColors.mutedText,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Add',
-                                style: GoogleFonts.inter(
-                                  color: product.inStock ? Colors.white : AppleColors.mutedText,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFA000),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
+                          alignment: Alignment.center,
+                          child: inCartCount > 0
+                              ? Text(
+                                  '$inCartCount',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13,
+                                  ),
+                                )
+                              : const Icon(
+                                  LucideIcons.plus,
+                                  size: 18,
+                                  color: Colors.black,
+                                ),
                         ),
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 10),
+
+                // Dish Title in Domine bold font
+                Text(
+                  product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.domine(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    height: 1.25,
+                  ),
+                ),
+                const Spacer(),
+
+                // Price tag in bold yellow-orange Domine font (NO stock indicator)
+                Text(
+                  _peso.format(product.price),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.domine(
+                    color: const Color(0xFFFFA000),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                  ),
                 ),
               ],
             ),
@@ -167,11 +168,11 @@ class AppleFoodCard extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      color: AppleColors.cardSurface,
+      color: const Color(0xFF27272A),
       alignment: Alignment.center,
       child: const Icon(
         Icons.local_fire_department,
-        color: AppleColors.primaryAccent,
+        color: Color(0xFFFFA000),
         size: 36,
       ),
     );

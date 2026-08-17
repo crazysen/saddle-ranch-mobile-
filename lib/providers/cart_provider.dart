@@ -100,6 +100,24 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
+  String? get appliedVoucherCode => _appliedVoucher?.code;
+
+  void removeOne(Product product) {
+    final index = _items.indexWhere((i) => i.product.id == product.id);
+    if (index >= 0) {
+      if (_items[index].quantity > 1) {
+        _items[index].quantity -= 1;
+      } else {
+        _items.removeAt(index);
+      }
+      if (_appliedVoucher != null && subtotal < _appliedVoucher!.minSpend) {
+        _appliedVoucher = null;
+        _voucherError = 'Minimum spend not met.';
+      }
+      notifyListeners();
+    }
+  }
+
   /// Apply voucher code via backend validation API
   Future<bool> applyVoucher(String code) async {
     final cleanCode = code.trim().toUpperCase();
@@ -135,6 +153,11 @@ class CartProvider extends ChangeNotifier {
       _validatingVoucher = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> validateAndApplyVoucher(String code, String branch) async {
+    setBranch(branch);
+    return applyVoucher(code);
   }
 
   void removeVoucher() {
