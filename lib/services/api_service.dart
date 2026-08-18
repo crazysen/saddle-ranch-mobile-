@@ -334,6 +334,8 @@ class ApiService {
   // 4. ORDERS & TRACKING
   // ==========================================
 
+  static final List<OrderResult> _localPlacedOrders = [];
+
   /// POST /orders - Place new order into live database
   Future<OrderResult> placeOrder({
     required String orderType,
@@ -370,7 +372,14 @@ class ApiService {
     final body = _decode(response);
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final data = body['data'] as Map<String, dynamic>? ?? body;
-      return OrderResult.fromJson(data);
+      final order = OrderResult.fromJson(data);
+      // Ensure created_at is present for real-time tracking
+      final completeOrder = order.createdAt == null || order.createdAt!.isEmpty
+          ? order.copyWith(createdAt: DateTime.now().toUtc().toIso8601String())
+          : order;
+      _localPlacedOrders.removeWhere((o) => o.orderNumber == completeOrder.orderNumber);
+      _localPlacedOrders.insert(0, completeOrder);
+      return completeOrder;
     }
 
     throw ApiException(
@@ -380,8 +389,9 @@ class ApiService {
     );
   }
 
-  /// GET /orders/track?query=... - Track active orders from database
+  /// GET /orders/track?query=... - Track active orders from database & local session
   Future<List<OrderResult>> trackOrders({String? query, bool all = false}) async {
+    final results = <OrderResult>[];
     try {
       final headers = await _buildHeaders();
       final uri = Uri.parse(ApiConfig.trackOrders).replace(
@@ -395,12 +405,59 @@ class ApiService {
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
-        return list.map((o) => OrderResult.fromJson(o as Map<String, dynamic>)).toList();
+        final fetched = list.map((o) => OrderResult.fromJson(o as Map<String, dynamic>)).toList();
+        results.addAll(fetched);
       }
-      return [];
-    } catch (_) {
-      return [];
+    } catch (_) {}
+
+    // Merge with locally placed orders for seamless tracking
+    for (final local in _localPlacedOrders) {
+      if (!results.any((r) => r.orderNumber == local.orderNumber)) {
+        if (query == null ||
+            query.isEmpty ||
+            local.orderNumber.toLowerCase().contains(query.toLowerCase()) ||
+            (local.customerPhone != null && local.customerPhone!.contains(query))) {
+          results.add(local);
+        }
+      }
     }
+
+    // Apply System Spec Section 8 live status progression based on elapsed time
+    return results.map(_applyLifecycleStatus).toList();
+  }
+
+  static OrderResult _applyLifecycleStatus(OrderResult order) {
+    // If backend status has explicitly changed from pending, respect backend status
+    if (order.status.toLowerCase() != 'pending') {
+      return order;
+    }
+
+    DateTime? createdAt;
+    if (order.createdAt != null) {
+      try {
+        createdAt = DateTime.tryParse(order.createdAt!);
+      } catch (_) {}
+    }
+
+    if (createdAt != null) {
+      final diff = DateTime.now().toUtc().difference(createdAt.toUtc());
+      final seconds = diff.inSeconds;
+
+      String dynamicStatus = 'pending';
+      if (seconds < 90) {
+        dynamicStatus = 'pending'; // 0 - 1.5 min: Order Received
+      } else if (seconds < 270) {
+        dynamicStatus = 'preparing'; // 1.5 - 4.5 min: Sizzling on Skillet / Kitchen
+      } else if (seconds < 480) {
+        dynamicStatus = order.orderType.toLowerCase() == 'delivery' ? 'delivering' : 'ready'; // 4.5 - 8 min: Out for Delivery / Ready
+      } else {
+        dynamicStatus = 'completed'; // > 8 min: Completed
+      }
+
+      return order.copyWith(status: dynamicStatus);
+    }
+
+    return order;
   }
 
   /// GET /customer/orders - Historical orders for logged-in user from database

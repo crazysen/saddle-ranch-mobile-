@@ -48,6 +48,10 @@ class SaddleRanchApp extends StatelessWidget {
   }
 }
 
+class AppTabController {
+  static void Function(int index)? switchTab;
+}
+
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -63,6 +67,11 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
+    AppTabController.switchTab = (int idx) {
+      if (mounted) {
+        setState(() => _index = idx);
+      }
+    };
     _initDeepLinks();
   }
 
@@ -103,6 +112,7 @@ class _MainShellState extends State<MainShell> {
       MaterialPageRoute(
         builder: (_) => MenuScreen(
           onOrderPlaced: () {
+            Navigator.of(context).popUntil((route) => route.isFirst);
             setState(() => _index = 1); // Navigate to Orders screen
           },
         ),

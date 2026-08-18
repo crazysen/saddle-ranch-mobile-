@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
+import '../main.dart';
 import '../models/order_result.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
@@ -132,20 +133,31 @@ class _ViewOrderModalState extends State<ViewOrderModal> {
         discountAmount: cart.discountAmount,
       );
 
+      final appliedVoucher = cart.appliedVoucherCode;
+      if (appliedVoucher != null && appliedVoucher.isNotEmpty) {
+        cart.markVoucherUsed(appliedVoucher);
+      }
+
       cart.clear();
 
       if (!mounted) return;
+      final rootCtx = context;
       Navigator.pop(context);
 
       widget.onOrderPlaced?.call();
 
-      await ConfirmationModal.show(
-        context,
-        title: 'Order Placed!',
-        message: 'Order #${order.orderNumber} has been received by Saddle Ranch $branch Branch and sent to the kitchen.',
-        type: ConfirmationType.success,
-        confirmLabel: 'Track Order',
-      );
+      if (rootCtx.mounted) {
+        final track = await ConfirmationModal.show(
+          rootCtx,
+          title: 'Order Placed!',
+          message: 'Order #${order.orderNumber} has been received by Saddle Ranch $branch Branch and sent to the kitchen.',
+          type: ConfirmationType.success,
+          confirmLabel: 'Track Order',
+        );
+        if (track == true) {
+          AppTabController.switchTab?.call(1);
+        }
+      }
     } catch (e) {
       if (mounted) {
         setState(() {

@@ -11,6 +11,7 @@ class CartProvider extends ChangeNotifier {
   CartProvider({ApiService? api}) : _api = api ?? ApiService();
 
   final List<CartItem> _items = [];
+  final Set<String> _usedVoucherCodes = {};
   String _branch = 'Bulihan';
   Voucher? _appliedVoucher;
   String? _voucherError;
@@ -21,6 +22,13 @@ class CartProvider extends ChangeNotifier {
   String? get voucherError => _voucherError;
   bool get validatingVoucher => _validatingVoucher;
   String get branch => _branch;
+
+  bool isVoucherUsed(String code) => _usedVoucherCodes.contains(code.trim().toUpperCase());
+
+  void markVoucherUsed(String code) {
+    _usedVoucherCodes.add(code.trim().toUpperCase());
+    notifyListeners();
+  }
 
   int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
 

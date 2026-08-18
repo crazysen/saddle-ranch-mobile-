@@ -8,7 +8,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_theme.dart';
+import '../main.dart';
 import '../providers/auth_provider.dart';
+import '../providers/cart_provider.dart';
 import '../providers/menu_provider.dart';
 import '../providers/order_session_provider.dart';
 import '../utils/menu_category.dart';
@@ -370,98 +372,144 @@ class _HomeScreenState extends State<HomeScreen> {
                                 statusMessage = 'Order delivered / completed. Enjoy your meal!';
                               }
 
-                              return Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: statusColor.withValues(alpha: 0.3),
-                                    width: 1.2,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.03),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: statusColor.withValues(alpha: 0.12),
-                                        shape: BoxShape.circle,
+                                  onTap: () {
+                                    Navigator.pop(ctx);
+                                    AppTabController.switchTab?.call(1);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: statusColor.withValues(alpha: 0.3),
+                                        width: 1.2,
                                       ),
-                                      child: Icon(
-                                        statusIcon,
-                                        color: statusColor,
-                                        size: 20,
-                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.03),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: statusColor.withValues(alpha: 0.12),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            statusIcon,
+                                            color: statusColor,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    'Order ${order.orderNumber}',
+                                                    style: GoogleFonts.domine(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 14,
+                                                      color: const Color(0xFF1F2937),
+                                                    ),
+                                                  ),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: statusColor.withValues(alpha: 0.1),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      order.statusLabel,
+                                                      style: GoogleFonts.workSans(
+                                                        color: statusColor,
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
                                               Text(
-                                                'Order ${order.orderNumber}',
-                                                style: GoogleFonts.domine(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                  color: const Color(0xFF1F2937),
+                                                statusMessage,
+                                                style: GoogleFonts.workSans(
+                                                  color: const Color(0xFF4B5563),
+                                                  fontSize: 12,
+                                                  height: 1.3,
                                                 ),
                                               ),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: statusColor.withValues(alpha: 0.1),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  order.statusLabel,
-                                                  style: GoogleFonts.workSans(
-                                                    color: statusColor,
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.bold,
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    '${order.orderType.toUpperCase()} • ${order.branch} Branch',
+                                                    style: GoogleFonts.workSans(
+                                                      color: const Color(0xFF9CA3AF),
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
                                                   ),
-                                                ),
+                                                  Text(
+                                                    'Track Order →',
+                                                    style: GoogleFonts.workSans(
+                                                      color: const Color(0xFFF59E0B),
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            statusMessage,
-                                            style: GoogleFonts.workSans(
-                                              color: const Color(0xFF4B5563),
-                                              fontSize: 12,
-                                              height: 1.3,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            '${order.orderType.toUpperCase()} • ${order.branch} Branch',
-                                            style: GoogleFonts.workSans(
-                                              color: const Color(0xFF9CA3AF),
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               );
                             },
                           ),
                   ),
+                  if (_activeOrders.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          AppTabController.switchTab?.call(1);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF59E0B),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: Text(
+                          'View in Orders Tracker',
+                          style: GoogleFonts.workSans(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             );
@@ -1134,6 +1182,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 separatorBuilder: (_, _) => const SizedBox(width: 14),
                                 itemBuilder: (context, index) {
                                   final v = branchVouchers[index];
+                                  final cart = context.watch<CartProvider>();
+                                  final isVoucherUsed = v.isUsed || cart.isVoucherUsed(v.code);
+                                  final isVoucherApplied = cart.appliedVoucherCode?.toUpperCase() == v.code.toUpperCase();
 
                                   return _TicketVoucherCard(
                                     discount: v.discountLabel,
@@ -1143,17 +1194,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                     expiry: v.branch.toLowerCase() == 'all'
                                         ? 'All Branches'
                                         : '${v.branch} branch only',
-                                    claimed: v.isUsed,
+                                    isUsed: isVoucherUsed,
+                                    isApplied: isVoucherApplied,
                                     accentColor: index % 2 == 0 ? const Color(0xFFFF6B00) : const Color(0xFF0288D1),
-                                    onClaim: () {
-                                      Clipboard.setData(ClipboardData(text: v.code));
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Voucher code "${v.code}" copied to clipboard!'),
-                                          duration: const Duration(seconds: 2),
-                                          backgroundColor: AppleColors.primaryAccent,
-                                        ),
-                                      );
+                                    onClaim: () async {
+                                      final currentCtx = context;
+                                      await Clipboard.setData(ClipboardData(text: v.code));
+                                      if (currentCtx.mounted) {
+                                        if (cart.items.isNotEmpty) {
+                                          await cart.applyVoucher(v.code);
+                                        }
+                                        if (currentCtx.mounted) {
+                                          ConfirmationModal.show(
+                                            currentCtx,
+                                            title: 'Voucher Copied!',
+                                            message: 'Voucher code "${v.code}" copied to clipboard and applied to your order.',
+                                            type: ConfirmationType.success,
+                                          );
+                                        }
+                                      }
                                     },
                                   );
                                 },
@@ -1423,7 +1482,8 @@ class _TicketVoucherCard extends StatelessWidget {
   final String minSpend;
   final String code;
   final String expiry;
-  final bool claimed;
+  final bool isUsed;
+  final bool isApplied;
   final Color accentColor;
   final VoidCallback onClaim;
 
@@ -1433,7 +1493,8 @@ class _TicketVoucherCard extends StatelessWidget {
     required this.minSpend,
     required this.code,
     required this.expiry,
-    required this.claimed,
+    required this.isUsed,
+    required this.isApplied,
     required this.accentColor,
     required this.onClaim,
   });
@@ -1462,7 +1523,7 @@ class _TicketVoucherCard extends StatelessWidget {
               Container(
                 width: 6,
                 height: double.infinity,
-                color: accentColor,
+                color: isUsed ? const Color(0xFF9CA3AF) : accentColor,
               ),
               // Voucher Left Content
               Expanded(
@@ -1475,7 +1536,7 @@ class _TicketVoucherCard extends StatelessWidget {
                       Text(
                         discount,
                         style: GoogleFonts.inter(
-                          color: accentColor,
+                          color: isUsed ? const Color(0xFF9CA3AF) : accentColor,
                           fontWeight: FontWeight.w900,
                           fontSize: 17,
                         ),
@@ -1486,9 +1547,12 @@ class _TicketVoucherCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          color: AppleColors.textPrimary,
+                          color: isUsed ? const Color(0xFF9CA3AF) : AppleColors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
+                          decoration: isUsed ? TextDecoration.lineThrough : null,
+                          decorationColor: const Color(0xFF4B5563),
+                          decorationThickness: 2,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -1528,7 +1592,7 @@ class _TicketVoucherCard extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
                           fontSize: 10,
-                          color: AppleColors.textPrimary,
+                          color: isUsed ? const Color(0xFF9CA3AF) : AppleColors.textPrimary,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -1537,10 +1601,14 @@ class _TicketVoucherCard extends StatelessWidget {
                     SizedBox(
                       height: 28,
                       child: ElevatedButton(
-                        onPressed: claimed ? null : onClaim,
+                        onPressed: (isUsed || isApplied) ? null : onClaim,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: claimed ? Colors.grey[400] : accentColor,
-                          foregroundColor: Colors.white,
+                          backgroundColor: isUsed
+                              ? const Color(0xFFE5E7EB)
+                              : (isApplied ? const Color(0xFF10B981) : accentColor),
+                          foregroundColor: isUsed ? const Color(0xFF9CA3AF) : Colors.white,
+                          disabledBackgroundColor: isUsed ? const Color(0xFFE5E7EB) : const Color(0xFF10B981),
+                          disabledForegroundColor: isUsed ? const Color(0xFF9CA3AF) : Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -1548,7 +1616,7 @@ class _TicketVoucherCard extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          claimed ? 'Applied' : 'Claim',
+                          isUsed ? 'Used' : (isApplied ? 'Applied' : 'Claim'),
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 11,

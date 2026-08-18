@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_theme.dart';
+import '../main.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/view_order_modal.dart';
 
@@ -247,7 +248,12 @@ class CartScreen extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () {
                             AppleTheme.hapticFeedback();
-                            ViewOrderModal.show(context);
+                            ViewOrderModal.show(
+                              context,
+                              onOrderPlaced: () {
+                                AppTabController.switchTab?.call(1);
+                              },
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFF59E0B),

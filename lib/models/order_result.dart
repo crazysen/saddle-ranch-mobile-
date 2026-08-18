@@ -138,6 +138,66 @@ class OrderResult {
     );
   }
 
+  OrderResult copyWith({
+    int? id,
+    int? userId,
+    String? orderNumber,
+    String? branch,
+    String? orderType,
+    String? tableNumber,
+    String? status,
+    double? totalAmount,
+    String? paymentMethod,
+    String? voucherCode,
+    double? discountAmount,
+    String? customerName,
+    String? customerPhone,
+    String? deliveryAddress,
+    String? deliveryNotes,
+    String? createdAt,
+    List<OrderItemModel>? items,
+  }) {
+    return OrderResult(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      orderNumber: orderNumber ?? this.orderNumber,
+      branch: branch ?? this.branch,
+      orderType: orderType ?? this.orderType,
+      tableNumber: tableNumber ?? this.tableNumber,
+      status: status ?? this.status,
+      totalAmount: totalAmount ?? this.totalAmount,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      voucherCode: voucherCode ?? this.voucherCode,
+      discountAmount: discountAmount ?? this.discountAmount,
+      customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
+      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
+      deliveryNotes: deliveryNotes ?? this.deliveryNotes,
+      createdAt: createdAt ?? this.createdAt,
+      items: items ?? this.items,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'user_id': userId,
+        'order_number': orderNumber,
+        'branch': branch,
+        'order_type': orderType,
+        'table_number': tableNumber,
+        'status': status,
+        'total_amount': totalAmount,
+        'payment_method': paymentMethod,
+        'voucher_code': voucherCode,
+        'discount_amount': discountAmount,
+        'customer_name': customerName,
+        'customer_phone': customerPhone,
+        'delivery_address': deliveryAddress,
+        'delivery_notes': deliveryNotes,
+        'created_at': createdAt,
+        'order_items': items.map((i) => i.toJson()).toList(),
+      };
+
   static double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? 0;
