@@ -89,21 +89,24 @@ class OrderResult {
     this.items = const [],
   });
 
-  /// User friendly status label with emoji matching spec lifecycle
+  /// User friendly status label without emojis
   String get statusLabel {
     switch (status.toLowerCase()) {
       case 'pending':
-        return '🕒 Order Received';
+        return 'Order Received';
       case 'preparing':
-        return '🔥 Sizzling on Skillet';
+        return 'Preparing in Kitchen';
       case 'ready':
-        return '🍽️ Ready';
+        return 'Ready for Pickup';
+      case 'delivering':
+      case 'out_for_delivery':
+        return 'Out for Delivery';
       case 'completed':
-        return '✅ Completed';
+        return 'Completed';
       case 'cancelled':
-        return '❌ Cancelled';
+        return 'Cancelled';
       default:
-        return status.toUpperCase();
+        return status.replaceAll('_', ' ').toUpperCase();
     }
   }
 

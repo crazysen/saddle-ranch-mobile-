@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,7 @@ import '../providers/menu_provider.dart';
 import '../providers/order_session_provider.dart';
 import '../utils/menu_category.dart';
 import '../widgets/banner_carousel.dart';
+import '../widgets/confirmation_modal.dart';
 import 'qr_scanner_screen.dart';
 
 import '../models/order_result.dart';
@@ -56,12 +58,16 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Voucher> _vouchers = [];
   List<OrderResult> _activeOrders = [];
   bool _loadingVouchers = false;
+  Timer? _ordersPollingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadVouchers();
     _loadActiveOrders();
+    _ordersPollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) _loadActiveOrders();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoDetectClosestBranch();
     });
@@ -104,6 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _ordersPollingTimer?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -218,19 +225,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () async {
-                          final messenger = ScaffoldMessenger.of(context);
+                          final currentCtx = context;
                           await session.autoDetectBranch();
                           menu.setBranch(session.branch);
                           setPickerState(() {});
                           if (!mounted) return;
                           final branchName = session.branch == 'Bulihan' ? 'Bulihan Main (Silang)' : 'Dasmariñas Branch';
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text('Auto-detected closest branch: $branchName'),
-                              backgroundColor: const Color(0xFFF59E0B),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
+                          if (currentCtx.mounted) {
+                            ConfirmationModal.show(
+                              currentCtx,
+                              title: 'Closest Branch Detected',
+                              message: 'Your nearest location is $branchName. Menu items and pricing are now configured for this branch.',
+                              type: ConfirmationType.success,
+                            );
+                          }
                         },
                         icon: const Icon(LucideIcons.locateFixed, size: 16, color: Color(0xFFF59E0B)),
                         label: Text(
@@ -331,20 +339,53 @@ class _HomeScreenState extends State<HomeScreen> {
                             separatorBuilder: (_, _) => const SizedBox(height: 10),
                             itemBuilder: (context, index) {
                               final order = _activeOrders[index];
-                              final isPreparing = order.status == 'preparing';
+                              final status = order.status.toLowerCase();
+                              final isPreparing = status == 'preparing';
+                              final isDelivering = status == 'delivering' || status == 'out_for_delivery';
+                              final isReady = status == 'ready';
+
+                              IconData statusIcon = LucideIcons.receipt;
+                              Color statusColor = const Color(0xFFF59E0B);
+                              String statusMessage = 'Order has been placed and confirmed.';
+
+                              if (status == 'pending') {
+                                statusIcon = LucideIcons.clock;
+                                statusColor = const Color(0xFF3B82F6);
+                                statusMessage = 'Order received! The branch is reviewing your ticket.';
+                              } else if (isPreparing) {
+                                statusIcon = LucideIcons.flame;
+                                statusColor = const Color(0xFFF59E0B);
+                                statusMessage = 'Your meal is now sizzling on the skillet in the kitchen.';
+                              } else if (isReady) {
+                                statusIcon = LucideIcons.checkCircle2;
+                                statusColor = const Color(0xFF10B981);
+                                statusMessage = 'Your order is ready! Pick it up at the counter or dine-in table.';
+                              } else if (isDelivering) {
+                                statusIcon = LucideIcons.bike;
+                                statusColor = const Color(0xFF8B5CF6);
+                                statusMessage = 'Rider is on the way with your sizzling favorites.';
+                              } else if (status == 'completed') {
+                                statusIcon = LucideIcons.checkCircle2;
+                                statusColor = const Color(0xFF10B981);
+                                statusMessage = 'Order delivered / completed. Enjoy your meal!';
+                              }
 
                               return Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: isPreparing
-                                      ? AppleColors.primaryAccent.withValues(alpha: 0.06)
-                                      : const Color(0xFFF9F9FB),
+                                  color: Colors.white,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: isPreparing
-                                        ? AppleColors.primaryAccent.withValues(alpha: 0.25)
-                                        : const Color(0xFFEEEEEE),
+                                    color: statusColor.withValues(alpha: 0.3),
+                                    width: 1.2,
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.03),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,12 +393,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: AppleColors.primaryAccent.withValues(alpha: 0.12),
+                                        color: statusColor.withValues(alpha: 0.12),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
-                                        isPreparing ? LucideIcons.flame : LucideIcons.receipt,
-                                        color: AppleColors.primaryAccent,
+                                        statusIcon,
+                                        color: statusColor,
                                         size: 20,
                                       ),
                                     ),
@@ -371,28 +412,45 @@ class _HomeScreenState extends State<HomeScreen> {
                                             children: [
                                               Text(
                                                 'Order ${order.orderNumber}',
-                                                style: GoogleFonts.inter(
-                                                  fontWeight: FontWeight.w800,
+                                                style: GoogleFonts.domine(
+                                                  fontWeight: FontWeight.bold,
                                                   fontSize: 14,
-                                                  color: AppleColors.textPrimary,
+                                                  color: const Color(0xFF1F2937),
                                                 ),
                                               ),
-                                              Text(
-                                                order.createdAt ?? 'Active',
-                                                style: GoogleFonts.inter(
-                                                  color: AppleColors.mutedText,
-                                                  fontSize: 11,
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: statusColor.withValues(alpha: 0.1),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  order.statusLabel,
+                                                  style: GoogleFonts.workSans(
+                                                    color: statusColor,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
                                             ],
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            '${order.statusLabel} • ${order.orderType.toUpperCase()} (${order.branch} branch)',
-                                            style: GoogleFonts.inter(
-                                              color: AppleColors.textBody,
+                                            statusMessage,
+                                            style: GoogleFonts.workSans(
+                                              color: const Color(0xFF4B5563),
                                               fontSize: 12,
                                               height: 1.3,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            '${order.orderType.toUpperCase()} • ${order.branch} Branch',
+                                            style: GoogleFonts.workSans(
+                                              color: const Color(0xFF9CA3AF),
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                         ],

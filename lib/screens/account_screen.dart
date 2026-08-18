@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../theme/apple_theme.dart';
+import '../widgets/confirmation_modal.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -50,72 +51,24 @@ class _AccountScreenState extends State<AccountScreen> {
 
     if (mounted) {
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(LucideIcons.checkCircle, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                'Profile updated successfully!',
-                style: GoogleFonts.workSans(color: Colors.white, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
+      ConfirmationModal.show(
+        context,
+        title: 'Profile Updated!',
+        message: 'Your personal information has been saved successfully.',
+        type: ConfirmationType.success,
       );
     }
   }
 
   Future<void> _handleLogout() async {
     AppleTheme.hapticFeedback();
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(
-          'Log Out',
-          style: GoogleFonts.domine(
-            color: const Color(0xFF1F2937),
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to log out of your Saddle Ranch account?',
-          style: GoogleFonts.workSans(
-            color: const Color(0xFF4B5563),
-            fontSize: 14,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.workSans(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF43F5E),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(
-              'Log Out',
-              style: GoogleFonts.workSans(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+    final confirm = await ConfirmationModal.show(
+      context,
+      title: 'Log Out',
+      message: 'Are you sure you want to log out of your Saddle Ranch account?',
+      confirmLabel: 'Log Out',
+      cancelLabel: 'Cancel',
+      type: ConfirmationType.alert,
     );
 
     if (confirm == true && mounted) {

@@ -13,6 +13,7 @@ import '../providers/menu_provider.dart';
 import '../providers/order_session_provider.dart';
 import '../services/api_service.dart';
 import '../theme/apple_theme.dart';
+import '../widgets/confirmation_modal.dart';
 
 final _currency = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 0);
 
@@ -193,12 +194,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             : () async {
                                 await session.triggerCallWaiter();
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Buzzer sent for Table #${session.tableNumber}! A server will assist you shortly.'),
-                                      backgroundColor: AppleColors.primaryAccent,
-                                      duration: const Duration(seconds: 4),
-                                    ),
+                                  ConfirmationModal.show(
+                                    context,
+                                    title: 'Buzzer Sent!',
+                                    message: 'Table #${session.tableNumber} buzzer has been sent. A server will assist you shortly.',
+                                    type: ConfirmationType.success,
                                   );
                                 }
                               },
@@ -434,44 +434,49 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ),
                           ],
                         ),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            AppleTheme.hapticFeedback();
-                            final cart = context.read<CartProvider>();
-                            final menu = context.read<MenuProvider>();
-                            for (final item in order.items) {
-                              final prod = menu.products.firstWhere(
-                                (p) => p.id == item.productId,
-                                orElse: () => Product(
-                                  id: item.productId,
-                                  name: item.productName,
-                                  description: '',
-                                  price: item.unitPrice,
-                                  stockQuantity: 50,
-                                  isActive: true,
-                                ),
+                        SizedBox(
+                          height: 36,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              AppleTheme.hapticFeedback();
+                              final cart = context.read<CartProvider>();
+                              final menu = context.read<MenuProvider>();
+                              for (final item in order.items) {
+                                final prod = menu.products.firstWhere(
+                                  (p) => p.id == item.productId,
+                                  orElse: () => Product(
+                                    id: item.productId,
+                                    name: item.productName,
+                                    description: '',
+                                    price: item.unitPrice,
+                                    stockQuantity: 50,
+                                    isActive: true,
+                                  ),
+                                );
+                                cart.add(prod, quantity: item.quantity);
+                              }
+                              ConfirmationModal.show(
+                                context,
+                                title: 'Items Reordered!',
+                                message: 'All items from order ${order.orderNumber} have been added to your cart.',
+                                type: ConfirmationType.success,
                               );
-                              cart.add(prod, quantity: item.quantity);
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Items from ${order.orderNumber} reordered into cart!'),
-                                backgroundColor: AppleColors.primaryAccent,
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF59E0B),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(LucideIcons.repeat, size: 14, color: Colors.white),
+                            label: Text(
+                              'Reorder',
+                              style: GoogleFonts.workSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
                               ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            minimumSize: Size.zero,
-                            side: const BorderSide(color: AppleColors.primaryAccent),
-                          ),
-                          icon: const Icon(LucideIcons.rotateCcw, size: 14, color: AppleColors.primaryAccent),
-                          label: Text(
-                            'Reorder',
-                            style: GoogleFonts.inter(
-                              color: AppleColors.primaryAccent,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
                             ),
                           ),
                         ),

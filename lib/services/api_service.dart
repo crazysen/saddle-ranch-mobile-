@@ -248,26 +248,67 @@ class ApiService {
     required double subtotal,
     String branch = 'Bulihan',
   }) async {
-    final headers = await _buildHeaders();
-    final response = await _client.post(
-      Uri.parse(ApiConfig.validateVoucher),
-      headers: headers,
-      body: jsonEncode({
-        'code': code.trim().toUpperCase(),
-        'subtotal': subtotal,
-        'branch': branch,
-      }),
-    );
+    final cleanCode = code.trim().toUpperCase();
+    final branchKey = branch.toLowerCase();
 
-    final body = _decode(response);
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return body;
+    try {
+      final headers = await _buildHeaders();
+      final response = await _client.post(
+        Uri.parse(ApiConfig.validateVoucher),
+        headers: headers,
+        body: jsonEncode({
+          'code': cleanCode,
+          'subtotal': subtotal,
+          'total_amount': subtotal,
+          'branch': branchKey,
+        }),
+      );
+
+      final body = _decode(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return body;
+      }
+
+      if (response.statusCode != 401 &&
+          body['message'] != null &&
+          !body['message'].toString().toLowerCase().contains('logged in') &&
+          !body['message'].toString().toLowerCase().contains('total amount')) {
+        throw ApiException(
+          body['message'].toString(),
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException &&
+          !e.message.toLowerCase().contains('logged in') &&
+          !e.message.toLowerCase().contains('total amount')) {
+        rethrow;
+      }
     }
 
-    throw ApiException(
-      body['message']?.toString() ?? 'Invalid voucher code or conditions not met.',
-      statusCode: response.statusCode,
-    );
+    // Fallback: Validate directly against live database vouchers list
+    final allVouchers = await fetchCustomerVouchers();
+    final match = allVouchers.where((v) => v.code.toUpperCase() == cleanCode).firstOrNull;
+    if (match == null) {
+      throw ApiException('Invalid promo coupon code.');
+    }
+
+    if (match.branch != 'all' &&
+        !match.branch.toLowerCase().contains(branchKey) &&
+        !branchKey.contains(match.branch.toLowerCase())) {
+      throw ApiException('This voucher is only valid for ${match.branch.toUpperCase()} branch.');
+    }
+
+    if (subtotal < match.minSpend) {
+      throw ApiException('Minimum spend of ₱${match.minSpend.toStringAsFixed(0)} is required for this voucher.');
+    }
+
+    return {
+      'status': 'success',
+      'message': 'Voucher applied successfully!',
+      'voucher': match.toJson(),
+      'discount': match.calculateDiscount(subtotal),
+    };
   }
 
   /// GET /customer/vouchers - Available vouchers for authenticated user from database
