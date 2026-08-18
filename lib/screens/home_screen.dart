@@ -10,7 +10,6 @@ import '../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/menu_provider.dart';
 import '../providers/order_session_provider.dart';
-import '../utils/cavite_locations.dart';
 import '../utils/menu_category.dart';
 import '../widgets/banner_carousel.dart';
 import 'qr_scanner_screen.dart';
@@ -63,6 +62,17 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadVouchers();
     _loadActiveOrders();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoDetectClosestBranch();
+    });
+  }
+
+  Future<void> _autoDetectClosestBranch() async {
+    if (!mounted) return;
+    final session = context.read<OrderSessionProvider>();
+    final menu = context.read<MenuProvider>();
+    await session.autoDetectBranch();
+    menu.setBranch(session.branch);
   }
 
   Future<void> _loadVouchers() async {
@@ -96,332 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
-  }
-
-  void _showAddAddressDialog(BuildContext parentCtx) {
-    String selectedCity = defaultCity;
-    String selectedBarangay = defaultBarangay;
-    final streetCtrl = TextEditingController();
-    final labelCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (dialogCtx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final isBulihan = isBulihanArea(
-              city: selectedCity,
-              barangay: selectedBarangay,
-              fullAddress: streetCtrl.text,
-            );
-
-            final availableBarangays = caviteLocations[selectedCity] ?? [defaultBarangay];
-            if (!availableBarangays.contains(selectedBarangay)) {
-              selectedBarangay = availableBarangays.first;
-            }
-
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
-              ),
-              child: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Add New Delivery Location',
-                        style: GoogleFonts.domine(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: AppleColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Live Dynamic Delivery Fee Banner
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isBulihan
-                              ? const Color(0xFFE8F5E9) // Soft Green
-                              : const Color(0xFFFFF3E0), // Soft Amber
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: isBulihan
-                                ? const Color(0xFF81C784)
-                                : const Color(0xFFFFB74D),
-                            width: 1.2,
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              isBulihan ? LucideIcons.truck : LucideIcons.bike,
-                              color: isBulihan
-                                  ? const Color(0xFF2E7D32)
-                                  : const Color(0xFFE65100),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    isBulihan
-                                        ? 'FREE Delivery Fee (Bulihan Area, Silang)'
-                                        : 'Delivery via Lalamove',
-                                    style: GoogleFonts.inter(
-                                      color: isBulihan
-                                          ? const Color(0xFF1B5E20)
-                                          : const Color(0xFFBF360C),
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    isBulihan
-                                        ? 'Your location qualifies for 100% Free Delivery!'
-                                        : 'Deliveries outside Bulihan Area are dispatched via Lalamove (customer pays actual rider delivery fee upon arrival).',
-                                    style: GoogleFonts.inter(
-                                      color: isBulihan
-                                          ? const Color(0xFF2E7D32)
-                                          : const Color(0xFFD84315),
-                                      fontSize: 11,
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Region & Province Badges (Read-Only)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF7F7F8),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFE5E5E7)),
-                              ),
-                              child: Text(
-                                'Region: IV-A',
-                                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppleColors.mutedText),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF7F7F8),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFE5E5E7)),
-                              ),
-                              child: Text(
-                                'Province: Cavite',
-                                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppleColors.mutedText),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Municipality / City Dropdown
-                      DropdownButtonFormField<String>(
-                        key: ValueKey('city_$selectedCity'),
-                        initialValue: selectedCity,
-                        decoration: const InputDecoration(
-                          labelText: 'Municipality / City *',
-                          prefixIcon: Icon(LucideIcons.building2),
-                        ),
-                        items: caviteLocations.keys.map((city) {
-                          return DropdownMenuItem(
-                            value: city,
-                            child: Text(city, style: GoogleFonts.inter(fontSize: 14)),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setDialogState(() {
-                              selectedCity = val;
-                              selectedBarangay = caviteLocations[val]!.first;
-                            });
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Barangay / Zone Dropdown
-                      DropdownButtonFormField<String>(
-                        key: ValueKey('brgy_${selectedCity}_$selectedBarangay'),
-                        initialValue: selectedBarangay,
-                        decoration: const InputDecoration(
-                          labelText: 'Barangay / Zone *',
-                          prefixIcon: Icon(LucideIcons.mapPin),
-                        ),
-                        items: availableBarangays.map((brgy) {
-                          final isBulihanBrgy = bulihanBarangays.contains(brgy);
-                          return DropdownMenuItem(
-                            value: brgy,
-                            child: Row(
-                              children: [
-                                Text(brgy, style: GoogleFonts.inter(fontSize: 14)),
-                                if (isBulihanBrgy) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE8F5E9),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      'FREE',
-                                      style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32)),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setDialogState(() => selectedBarangay = val);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Street Address / House No. / Landmark *
-                      TextFormField(
-                        controller: streetCtrl,
-                        onChanged: (_) => setDialogState(() {}),
-                        decoration: const InputDecoration(
-                          labelText: 'Street Address / House No. / Landmark *',
-                          hintText: 'e.g. Blk 26 Lot 17 Narra St.',
-                          prefixIcon: Icon(LucideIcons.home),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Please enter street address or landmark'
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Address Label (Optional)
-                      TextFormField(
-                        controller: labelCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Address Label (Optional)',
-                          hintText: 'e.g. Home, Work, Apartment',
-                          prefixIcon: Icon(LucideIcons.tag),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (formKey.currentState?.validate() == true) {
-                              final fullAddress = buildDeliveryAddressString(
-                                streetAddress: streetCtrl.text.trim(),
-                                barangay: selectedBarangay,
-                                city: selectedCity,
-                              );
-                              final title = labelCtrl.text.trim().isNotEmpty
-                                  ? labelCtrl.text.trim()
-                                  : '$selectedBarangay, $selectedCity';
-
-                              setState(() {
-                                _savedAddresses.insert(0, {
-                                  'title': title,
-                                  'subtitle': fullAddress,
-                                  'icon': LucideIcons.mapPin,
-                                  'mode': OrderMode.delivery,
-                                  'isBulihan': isBulihan,
-                                });
-                                _selectedLocation = title;
-                              });
-
-                              context.read<OrderSessionProvider>().setMode(OrderMode.delivery);
-
-                              Navigator.pop(dialogCtx);
-                              Navigator.pop(parentCtx);
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    isBulihan
-                                        ? 'Address "$title" saved with FREE delivery!'
-                                        : 'Address "$title" saved (Lalamove delivery).',
-                                  ),
-                                  backgroundColor: isBulihan
-                                      ? const Color(0xFF2E7D32)
-                                      : AppleColors.primaryAccent,
-                                ),
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppleColors.primaryAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: Text(
-                            'Save & Deliver Here',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   void _showLocationPicker() {
@@ -529,13 +213,39 @@ class _HomeScreenState extends State<HomeScreen> {
                         selected: true,
                         onTap: () => Navigator.pop(ctx),
                       ),
-                    const SizedBox(height: 8),
+                    // Auto-Detect Nearest Branch Button
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () => _showAddAddressDialog(ctx),
-                        icon: const Icon(LucideIcons.plus, size: 16, color: AppleColors.primaryAccent),
-                        label: const Text('Add New Delivery Location'),
+                        onPressed: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          await session.autoDetectBranch();
+                          menu.setBranch(session.branch);
+                          setPickerState(() {});
+                          if (!mounted) return;
+                          final branchName = session.branch == 'Bulihan' ? 'Bulihan Main (Silang)' : 'Dasmariñas Branch';
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text('Auto-detected closest branch: $branchName'),
+                              backgroundColor: const Color(0xFFF59E0B),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        icon: const Icon(LucideIcons.locateFixed, size: 16, color: Color(0xFFF59E0B)),
+                        label: Text(
+                          'Auto-Detect Closest Branch',
+                          style: GoogleFonts.workSans(
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1F2937),
+                            fontSize: 13,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
                       ),
                     ),
                   ],
@@ -755,7 +465,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {
                   session.setMode(OrderMode.dineIn);
                   Navigator.pop(ctx);
-                  widget.onOpenMenu();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+                  );
                 },
               ),
               const SizedBox(height: 10),

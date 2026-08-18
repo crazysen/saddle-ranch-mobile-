@@ -101,7 +101,7 @@ class MenuScreen extends StatelessWidget {
                               crossAxisCount: 2,
                               mainAxisSpacing: 12,
                               crossAxisSpacing: 12,
-                              childAspectRatio: 0.76,
+                              childAspectRatio: 0.65,
                             ),
                             itemCount: products.length,
                             itemBuilder: (context, index) {

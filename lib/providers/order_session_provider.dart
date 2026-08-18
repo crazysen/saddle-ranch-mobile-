@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import '../services/api_service.dart';
 
@@ -93,6 +95,47 @@ class OrderSessionProvider extends ChangeNotifier {
       _tableNumber = null;
     }
     notifyListeners();
+  }
+
+  /// Auto-detect if user is closer to Bulihan or Dasmariñas Branch
+  Future<Map<String, dynamic>> autoDetectBranch() async {
+    try {
+      final response = await http
+          .get(Uri.parse('https://ipwho.is/'))
+          .timeout(const Duration(seconds: 3));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic> && data['success'] == true) {
+          final lat = (data['latitude'] as num?)?.toDouble();
+          final lon = (data['longitude'] as num?)?.toDouble();
+          final city = (data['city'] as String?)?.toLowerCase() ?? '';
+
+          if (lat != null && lon != null) {
+            final distBulihan = calculateDistance(lat, lon, bulihanLat, bulihanLng);
+            final distDasma = calculateDistance(lat, lon, dasmaLat, dasmaLng);
+            final selected = distBulihan <= distDasma ? 'Bulihan' : 'Dasma';
+            final distance = distBulihan <= distDasma ? distBulihan : distDasma;
+            setBranch(selected);
+            return {
+              'branch': selected,
+              'distance': distance,
+              'city': data['city'],
+              'success': true,
+            };
+          } else if (city.contains('dasma') || city.contains('bacoor') || city.contains('imus')) {
+            setBranch('Dasma');
+            return {'branch': 'Dasma', 'city': data['city'], 'success': true};
+          } else if (city.contains('silang') || city.contains('tagaytay') || city.contains('bulihan')) {
+            setBranch('Bulihan');
+            return {'branch': 'Bulihan', 'city': data['city'], 'success': true};
+          }
+        }
+      }
+    } catch (_) {}
+
+    final fallback = _isBulihanAddress ? 'Bulihan' : 'Dasma';
+    setBranch(fallback);
+    return {'branch': fallback, 'success': false};
   }
 
   /// Select closest branch using Haversine formula

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,6 +37,11 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _signUpObscureConfirmPassword = true;
   bool _rememberMe = true;
 
+  String? _loginErrorMessage;
+  String? _signUpErrorMessage;
+  Timer? _loginErrorTimer;
+  Timer? _signUpErrorTimer;
+
   static const Color _primaryOrange = Color(0xFFFF5500);
   static const Color _inputBackground = Color(0xFFF2F2F7);
   static const Color _mutedText = Color(0xFF71717A);
@@ -44,6 +50,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   void dispose() {
+    _loginErrorTimer?.cancel();
+    _signUpErrorTimer?.cancel();
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
     _signUpNameController.dispose();
@@ -56,17 +64,32 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _switchToSignUp() {
     AppleTheme.hapticFeedback();
-    setState(() => _isSignUp = true);
+    _loginErrorTimer?.cancel();
+    _signUpErrorTimer?.cancel();
+    setState(() {
+      _loginErrorMessage = null;
+      _signUpErrorMessage = null;
+      _isSignUp = true;
+    });
   }
 
   void _switchToLogin() {
     AppleTheme.hapticFeedback();
-    setState(() => _isSignUp = false);
+    _loginErrorTimer?.cancel();
+    _signUpErrorTimer?.cancel();
+    setState(() {
+      _loginErrorMessage = null;
+      _signUpErrorMessage = null;
+      _isSignUp = false;
+    });
   }
 
   Future<void> _handleLoginSubmit() async {
     AppleTheme.hapticFeedback();
     if (!_loginFormKey.currentState!.validate()) return;
+
+    _loginErrorTimer?.cancel();
+    setState(() => _loginErrorMessage = null);
 
     final auth = context.read<AuthProvider>();
     final success = await auth.loginWithEmail(
@@ -75,19 +98,28 @@ class _AuthScreenState extends State<AuthScreen> {
     );
 
     if (!mounted) return;
-    if (!success && auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppleColors.danger,
-        ),
-      );
+    if (!success) {
+      final errorMsg = auth.error ?? 'Invalid login credentials';
+      setState(() {
+        _loginErrorMessage = errorMsg;
+      });
+      _loginErrorTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _loginErrorMessage = null;
+          });
+        }
+      });
+      // No snackbar for invalid login credentials
     }
   }
 
   Future<void> _handleSignUpSubmit() async {
     AppleTheme.hapticFeedback();
     if (!_signUpFormKey.currentState!.validate()) return;
+
+    _signUpErrorTimer?.cancel();
+    setState(() => _signUpErrorMessage = null);
 
     final email = _signUpEmailController.text.trim();
     final auth = context.read<AuthProvider>();
@@ -114,13 +146,18 @@ class _AuthScreenState extends State<AuthScreen> {
           duration: Duration(seconds: 4),
         ),
       );
-    } else if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppleColors.danger,
-        ),
-      );
+    } else {
+      final errorMsg = auth.error ?? 'Registration failed. Please try again.';
+      setState(() {
+        _signUpErrorMessage = errorMsg;
+      });
+      _signUpErrorTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _signUpErrorMessage = null;
+          });
+        }
+      });
     }
   }
 
@@ -299,7 +336,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 24),
 
-              if (auth.error != null) ...[
+              if (_loginErrorMessage != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
@@ -308,14 +345,23 @@ class _AuthScreenState extends State<AuthScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppleColors.danger.withValues(alpha: 0.3)),
                   ),
-                  child: Text(
-                    auth.error!,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      color: AppleColors.danger,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.alertCircle, size: 16, color: AppleColors.danger),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          _loginErrorMessage!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            color: AppleColors.danger,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -587,7 +633,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 24),
 
-              if (auth.error != null) ...[
+              if (_signUpErrorMessage != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
@@ -596,14 +642,23 @@ class _AuthScreenState extends State<AuthScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppleColors.danger.withValues(alpha: 0.3)),
                   ),
-                  child: Text(
-                    auth.error!,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      color: AppleColors.danger,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.alertCircle, size: 16, color: AppleColors.danger),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          _signUpErrorMessage!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            color: AppleColors.danger,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
