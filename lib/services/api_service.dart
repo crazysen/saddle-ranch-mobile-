@@ -389,15 +389,22 @@ class ApiService {
     );
   }
 
-  /// GET /orders/track?query=... - Track active orders from database & local session
+  /// GET /orders/track?query=... - Track active orders directly from live database (Web Admin/POS/KDS state)
   Future<List<OrderResult>> trackOrders({String? query, bool all = false}) async {
     final results = <OrderResult>[];
     try {
       final headers = await _buildHeaders();
+
+      // If no query is provided, query all or include placed order numbers
+      String? effectiveQuery = query;
+      if ((effectiveQuery == null || effectiveQuery.isEmpty) && !all && _localPlacedOrders.isNotEmpty) {
+        effectiveQuery = _localPlacedOrders.map((o) => o.orderNumber).join(',');
+      }
+
       final uri = Uri.parse(ApiConfig.trackOrders).replace(
         queryParameters: {
-          if (query != null && query.isNotEmpty) 'query': query,
-          if (all) 'all': '1',
+          if (effectiveQuery != null && effectiveQuery.isNotEmpty) 'query': effectiveQuery,
+          if (all || effectiveQuery == null || effectiveQuery.isEmpty) 'all': '1',
         },
       );
 
@@ -407,10 +414,18 @@ class ApiService {
         final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
         final fetched = list.map((o) => OrderResult.fromJson(o as Map<String, dynamic>)).toList();
         results.addAll(fetched);
+
+        // Update local cache with live database statuses from Web Admin / KDS / Cashier
+        for (final item in fetched) {
+          final idx = _localPlacedOrders.indexWhere((o) => o.orderNumber == item.orderNumber);
+          if (idx >= 0) {
+            _localPlacedOrders[idx] = item;
+          }
+        }
       }
     } catch (_) {}
 
-    // Merge with locally placed orders for seamless tracking
+    // Include any local placed orders if not yet returned in search filter
     for (final local in _localPlacedOrders) {
       if (!results.any((r) => r.orderNumber == local.orderNumber)) {
         if (query == null ||
@@ -422,42 +437,7 @@ class ApiService {
       }
     }
 
-    // Apply System Spec Section 8 live status progression based on elapsed time
-    return results.map(_applyLifecycleStatus).toList();
-  }
-
-  static OrderResult _applyLifecycleStatus(OrderResult order) {
-    // If backend status has explicitly changed from pending, respect backend status
-    if (order.status.toLowerCase() != 'pending') {
-      return order;
-    }
-
-    DateTime? createdAt;
-    if (order.createdAt != null) {
-      try {
-        createdAt = DateTime.tryParse(order.createdAt!);
-      } catch (_) {}
-    }
-
-    if (createdAt != null) {
-      final diff = DateTime.now().toUtc().difference(createdAt.toUtc());
-      final seconds = diff.inSeconds;
-
-      String dynamicStatus = 'pending';
-      if (seconds < 90) {
-        dynamicStatus = 'pending'; // 0 - 1.5 min: Order Received
-      } else if (seconds < 270) {
-        dynamicStatus = 'preparing'; // 1.5 - 4.5 min: Sizzling on Skillet / Kitchen
-      } else if (seconds < 480) {
-        dynamicStatus = order.orderType.toLowerCase() == 'delivery' ? 'delivering' : 'ready'; // 4.5 - 8 min: Out for Delivery / Ready
-      } else {
-        dynamicStatus = 'completed'; // > 8 min: Completed
-      }
-
-      return order.copyWith(status: dynamicStatus);
-    }
-
-    return order;
+    return results;
   }
 
   /// GET /customer/orders - Historical orders for logged-in user from database

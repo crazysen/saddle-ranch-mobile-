@@ -95,18 +95,39 @@ class OrderResult {
       case 'pending':
         return 'Order Received';
       case 'preparing':
-        return 'Preparing in Kitchen';
+        return 'Sizzling on the Grill';
       case 'ready':
         return 'Ready for Pickup';
       case 'delivering':
       case 'out_for_delivery':
         return 'Out for Delivery';
       case 'completed':
-        return 'Completed';
+        return 'Order Completed';
       case 'cancelled':
-        return 'Cancelled';
+        return 'Order Cancelled';
       default:
         return status.replaceAll('_', ' ').toUpperCase();
+    }
+  }
+
+  /// Live status message for Customer Tracker / Notifications from ORDER_LIFECYCLE_SPEC.md Section 7.B
+  String get statusDescription {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'We have received your order. Sent to the kitchen grill.';
+      case 'preparing':
+        return 'Chef is preparing your sizzling dishes right now!';
+      case 'ready':
+        return 'Your food is cooked and ready at the dispatch counter!';
+      case 'delivering':
+      case 'out_for_delivery':
+        return 'Rider is on the way with your sizzling favorites!';
+      case 'completed':
+        return 'Enjoy your meal! Thank you for dining with Saddle Ranch.';
+      case 'cancelled':
+        return 'This order was cancelled. Please check with our staff.';
+      default:
+        return 'Order is currently ${status.replaceAll('_', ' ')}.';
     }
   }
 

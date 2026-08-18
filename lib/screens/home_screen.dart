@@ -348,28 +348,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
                               IconData statusIcon = LucideIcons.receipt;
                               Color statusColor = const Color(0xFFF59E0B);
-                              String statusMessage = 'Order has been placed and confirmed.';
+                              String statusMessage = order.statusDescription;
 
                               if (status == 'pending') {
                                 statusIcon = LucideIcons.clock;
                                 statusColor = const Color(0xFF3B82F6);
-                                statusMessage = 'Order received! The branch is reviewing your ticket.';
                               } else if (isPreparing) {
                                 statusIcon = LucideIcons.flame;
                                 statusColor = const Color(0xFFF59E0B);
-                                statusMessage = 'Your meal is now sizzling on the skillet in the kitchen.';
                               } else if (isReady) {
                                 statusIcon = LucideIcons.checkCircle2;
                                 statusColor = const Color(0xFF10B981);
-                                statusMessage = 'Your order is ready! Pick it up at the counter or dine-in table.';
                               } else if (isDelivering) {
                                 statusIcon = LucideIcons.bike;
                                 statusColor = const Color(0xFF8B5CF6);
-                                statusMessage = 'Rider is on the way with your sizzling favorites.';
                               } else if (status == 'completed') {
                                 statusIcon = LucideIcons.checkCircle2;
                                 statusColor = const Color(0xFF10B981);
-                                statusMessage = 'Order delivered / completed. Enjoy your meal!';
+                              } else if (status == 'cancelled') {
+                                statusIcon = LucideIcons.xCircle;
+                                statusColor = const Color(0xFFEF4444);
                               }
 
                               return Material(
