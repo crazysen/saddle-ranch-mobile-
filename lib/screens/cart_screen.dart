@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../main.dart';
 import '../providers/cart_provider.dart';
+import '../utils/image_url_helper.dart';
 import '../widgets/view_order_modal.dart';
 
 final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 0);
@@ -74,6 +75,7 @@ class CartScreen extends StatelessWidget {
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final item = cart.items[index];
+                      final cartImg = ImageUrlHelper.normalize(item.product.imagePath);
                       return Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -96,9 +98,9 @@ class CartScreen extends StatelessWidget {
                               child: SizedBox(
                                 width: 64,
                                 height: 64,
-                                child: item.product.imagePath != null && item.product.imagePath!.isNotEmpty
+                                child: cartImg != null && cartImg.isNotEmpty
                                     ? CachedNetworkImage(
-                                        imageUrl: item.product.imagePath!,
+                                        imageUrl: cartImg,
                                         fit: BoxFit.cover,
                                         placeholder: (_, _) => Container(
                                           color: const Color(0xFFF3F4F6),

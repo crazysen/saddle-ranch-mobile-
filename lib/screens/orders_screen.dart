@@ -83,7 +83,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     try {
       final query = _searchCtrl.text.trim();
       final results = await _api.trackOrders(query: query.isNotEmpty ? query : null, all: query.isEmpty);
-      if (mounted && results.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _orders = results;
         });

@@ -9,6 +9,8 @@ import '../models/product.dart';
 import '../providers/cart_provider.dart';
 import '../theme/apple_theme.dart';
 
+import '../utils/image_url_helper.dart';
+
 final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 0);
 
 class AppleFoodCard extends StatelessWidget {
@@ -26,6 +28,7 @@ class AppleFoodCard extends StatelessWidget {
     final cart = context.watch<CartProvider>();
     final cartItem = cart.items.where((i) => i.product.id == product.id).firstOrNull;
     final inCartCount = cartItem?.quantity ?? 0;
+    final normalizedUrl = ImageUrlHelper.normalize(product.imagePath);
 
     return Container(
       decoration: BoxDecoration(
@@ -59,9 +62,9 @@ class AppleFoodCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: AspectRatio(
                     aspectRatio: 16 / 11,
-                    child: product.imagePath != null && product.imagePath!.isNotEmpty
+                    child: normalizedUrl != null && normalizedUrl.isNotEmpty
                         ? CachedNetworkImage(
-                            imageUrl: product.imagePath!,
+                            imageUrl: normalizedUrl,
                             fit: BoxFit.cover,
                             placeholder: (_, _) => Container(
                               color: const Color(0xFFF4F4F6),

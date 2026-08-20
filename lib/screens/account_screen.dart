@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../theme/apple_theme.dart';
+import '../utils/image_url_helper.dart';
 import '../widgets/confirmation_modal.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -119,8 +120,8 @@ class _AccountScreenState extends State<AccountScreen> {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: const Color(0xFFFFF7ED),
-                  backgroundImage: user?.photoUrl != null && user!.photoUrl!.isNotEmpty
-                      ? CachedNetworkImageProvider(user.photoUrl!)
+                  backgroundImage: (user?.photoUrl != null && user!.photoUrl!.isNotEmpty && ImageUrlHelper.normalize(user.photoUrl) != null)
+                      ? CachedNetworkImageProvider(ImageUrlHelper.normalize(user.photoUrl!)!)
                       : null,
                   child: user?.photoUrl == null || user!.photoUrl!.isEmpty
                       ? Text(

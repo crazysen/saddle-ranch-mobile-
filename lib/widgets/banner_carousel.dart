@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/app_theme.dart';
 import '../models/promo_banner.dart';
 import '../theme/apple_theme.dart';
+import '../utils/image_url_helper.dart';
 import '../utils/menu_category.dart';
 
 /// Promotion Banner Carousel matching Saddle Ranch Web 1:1
@@ -98,6 +99,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
             itemCount: banners.length,
             itemBuilder: (context, index) {
               final promo = banners[index];
+              final bannerUrl = ImageUrlHelper.normalize(promo.imagePath);
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: GestureDetector(
@@ -123,9 +125,9 @@ class _BannerCarouselState extends State<BannerCarousel> {
                       fit: StackFit.expand,
                       children: [
                         // Background Food Banner Image
-                        if (promo.imagePath != null && promo.imagePath!.isNotEmpty)
+                        if (bannerUrl != null && bannerUrl.isNotEmpty)
                           CachedNetworkImage(
-                            imageUrl: promo.imagePath!,
+                            imageUrl: bannerUrl,
                             fit: BoxFit.cover,
                             placeholder: (_, _) => Container(color: const Color(0xFF1C1C1E)),
                             errorWidget: (_, _, _) => Container(

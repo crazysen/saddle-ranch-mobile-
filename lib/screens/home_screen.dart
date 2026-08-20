@@ -21,6 +21,7 @@ import 'qr_scanner_screen.dart';
 import '../models/order_result.dart';
 import '../models/voucher.dart';
 import '../services/api_service.dart';
+import '../utils/image_url_helper.dart';
 
 final _currency = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 0);
 
@@ -98,13 +99,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  final Set<String> _dismissedOrderSignatures = {};
+
   Future<void> _loadActiveOrders() async {
     try {
       final list = await _api.trackOrders(all: true);
       if (mounted) {
         setState(() {
           _activeOrders = list;
-          _unreadNotifications = list.where((o) => o.status != 'completed' && o.status != 'cancelled').length;
+          _unreadNotifications = list.where((o) {
+            if (o.status == 'completed' || o.status == 'cancelled') return false;
+            final sig = '${o.orderNumber}_${o.status}';
+            return !_dismissedOrderSignatures.contains(sig);
+          }).length;
         });
       }
     } catch (_) {}
@@ -312,6 +319,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       TextButton(
                         onPressed: () {
+                          for (final o in _activeOrders) {
+                            _dismissedOrderSignatures.add('${o.orderNumber}_${o.status}');
+                          }
                           setState(() => _unreadNotifications = 0);
                           Navigator.pop(ctx);
                         },
@@ -375,6 +385,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
                                   onTap: () {
+                                    _dismissedOrderSignatures.add('${order.orderNumber}_${order.status}');
+                                    setState(() {
+                                      _unreadNotifications = _activeOrders.where((o) {
+                                        if (o.status == 'completed' || o.status == 'cancelled') return false;
+                                        return !_dismissedOrderSignatures.contains('${o.orderNumber}_${o.status}');
+                                      }).length;
+                                    });
                                     Navigator.pop(ctx);
                                     AppTabController.switchTab?.call(1);
                                   },
@@ -492,6 +509,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 46,
                       child: ElevatedButton(
                         onPressed: () {
+                          for (final o in _activeOrders) {
+                            _dismissedOrderSignatures.add('${o.orderNumber}_${o.status}');
+                          }
+                          setState(() => _unreadNotifications = 0);
                           Navigator.pop(ctx);
                           AppTabController.switchTab?.call(1);
                         },
@@ -735,8 +756,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       CircleAvatar(
                         radius: 22,
                         backgroundColor: AppleColors.cardSurface,
-                        backgroundImage: user?.photoUrl != null && user!.photoUrl!.isNotEmpty
-                            ? CachedNetworkImageProvider(user.photoUrl!)
+                        backgroundImage: (user?.photoUrl != null && user!.photoUrl!.isNotEmpty && ImageUrlHelper.normalize(user.photoUrl) != null)
+                            ? CachedNetworkImageProvider(ImageUrlHelper.normalize(user.photoUrl!)!)
                             : null,
                         child: user?.photoUrl == null || user!.photoUrl!.isEmpty
                             ? Text(
@@ -1015,9 +1036,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     children: [
                                       ClipRRect(
                                         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                        child: item.imagePath != null && item.imagePath!.isNotEmpty
+                                        child: (item.imagePath != null && item.imagePath!.isNotEmpty && ImageUrlHelper.normalize(item.imagePath) != null)
                                             ? CachedNetworkImage(
-                                                imageUrl: item.imagePath!,
+                                                imageUrl: ImageUrlHelper.normalize(item.imagePath!)!,
                                                 height: 105,
                                                 width: double.infinity,
                                                 fit: BoxFit.cover,
@@ -1192,6 +1213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     expiry: v.branch.toLowerCase() == 'all'
                                         ? 'All Branches'
                                         : '${v.branch} branch only',
+                                    claimed: isVoucherUsed,
                                     isUsed: isVoucherUsed,
                                     isApplied: isVoucherApplied,
                                     accentColor: index % 2 == 0 ? const Color(0xFFFF6B00) : const Color(0xFF0288D1),
@@ -1480,6 +1502,7 @@ class _TicketVoucherCard extends StatelessWidget {
   final String minSpend;
   final String code;
   final String expiry;
+  final bool claimed;
   final bool isUsed;
   final bool isApplied;
   final Color accentColor;
@@ -1491,8 +1514,9 @@ class _TicketVoucherCard extends StatelessWidget {
     required this.minSpend,
     required this.code,
     required this.expiry,
-    required this.isUsed,
-    required this.isApplied,
+    this.claimed = false,
+    this.isUsed = false,
+    this.isApplied = false,
     required this.accentColor,
     required this.onClaim,
   });

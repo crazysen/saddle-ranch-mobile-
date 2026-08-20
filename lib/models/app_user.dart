@@ -1,3 +1,5 @@
+import '../utils/image_url_helper.dart';
+
 class AppUser {
   final int? id;
   final String email;
@@ -71,7 +73,7 @@ class AppUser {
     return AppUser(
       id: int.tryParse(data['id'] ?? ''),
       email: data['email'] ?? '',
-      photoUrl: data['photoUrl'],
+      photoUrl: ImageUrlHelper.normalize(data['photoUrl']),
       fullName: data['fullName'] ?? '',
       firstName: data['firstName'],
       lastName: data['lastName'],
@@ -100,7 +102,7 @@ class AppUser {
       firstName: json['first_name']?.toString(),
       lastName: json['last_name']?.toString(),
       phone: phone,
-      photoUrl: photo,
+      photoUrl: ImageUrlHelper.normalize(photo),
       address: address,
       role: role,
       branch: branch,
