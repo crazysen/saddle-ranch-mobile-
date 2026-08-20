@@ -19,6 +19,7 @@ import '../widgets/confirmation_modal.dart';
 import 'qr_scanner_screen.dart';
 
 import '../models/order_result.dart';
+import '../models/product.dart';
 import '../models/voucher.dart';
 import '../services/api_service.dart';
 import '../utils/image_url_helper.dart';
@@ -727,8 +728,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ? 'Table ${session.tableNumber} (Dine-In)'
         : _selectedLocation;
 
-    final popularProducts = menu.products;
-
     return Scaffold(
       backgroundColor: AppleColors.scaffoldBackground,
       body: SafeArea(
@@ -937,170 +936,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              // Category Icons (Below Search) - Sizzling, Filipino Cuisines, Barkada, Rice and Drinks
+
+              // 3. "How are you Ordering" Section (Directly below Search)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _CategoryCard(
-                        title: 'Sizzling',
-                        iconWidget: const Icon(LucideIcons.flame, color: Color(0xFFE65100), size: 28),
-                        onTap: () => widget.onOpenMenu(category: MenuCategory.sizzling),
-                      ),
-                      _CategoryCard(
-                        title: 'Filipino Cuisines',
-                        iconWidget: const Icon(LucideIcons.utensilsCrossed, color: Color(0xFF2E7D32), size: 26),
-                        onTap: () => widget.onOpenMenu(category: MenuCategory.filipino),
-                      ),
-                      _CategoryCard(
-                        title: 'Barkada',
-                        iconWidget: const Icon(Icons.rice_bowl, color: Color(0xFFD84315), size: 28),
-                        onTap: () => widget.onOpenMenu(category: MenuCategory.barkada),
-                      ),
-                      _CategoryCard(
-                        title: 'Rice and Drinks',
-                        iconWidget: const Icon(LucideIcons.cupSoda, color: Color(0xFF0288D1), size: 26),
-                        onTap: () => widget.onOpenMenu(category: MenuCategory.drinks),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Promotion Banner Carousel (Live from Render database)
-              SliverToBoxAdapter(
-                child: BannerCarousel(
-                  banners: menu.banners,
-                  onSeeAll: () => widget.onOpenMenu(),
-                  onBannerTap: () => widget.onOpenMenu(),
-                ),
-              ),
-
-              // Sizzling Menu Highlights Section (Loaded from Database)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Sizzling Highlights',
-                        style: GoogleFonts.inter(
-                          color: AppleColors.textPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 195,
-                  child: popularProducts.isEmpty
-                      ? Center(
-                          child: menu.loading
-                              ? const CircularProgressIndicator(color: AppleColors.primaryAccent)
-                              : Text('No menu items available', style: GoogleFonts.inter(color: AppleColors.mutedText)),
-                        )
-                      : ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: popularProducts.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 14),
-                          itemBuilder: (context, index) {
-                            final item = popularProducts[index];
-                            final price = item.priceForBranch(session.branch);
-
-                            return SizedBox(
-                              width: 155,
-                              child: GestureDetector(
-                                onTap: () => widget.onOpenMenu(),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: const Color(0xFFF0F0F0)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.04),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                        child: (item.imagePath != null && item.imagePath!.isNotEmpty && ImageUrlHelper.normalize(item.imagePath) != null)
-                                            ? CachedNetworkImage(
-                                                imageUrl: ImageUrlHelper.normalize(item.imagePath!)!,
-                                                height: 105,
-                                                width: double.infinity,
-                                                fit: BoxFit.cover,
-                                                placeholder: (_, _) => Container(color: AppleColors.cardSurface),
-                                                errorWidget: (_, _, _) => Container(
-                                                  color: AppleColors.cardSurface,
-                                                  child: const Icon(Icons.fastfood, color: AppleColors.mutedText),
-                                                ),
-                                              )
-                                            : Container(
-                                                height: 105,
-                                                color: AppleColors.cardSurface,
-                                                child: const Center(child: Icon(Icons.restaurant, color: AppleColors.mutedText)),
-                                              ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(10),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              item.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 13,
-                                                color: AppleColors.textPrimary,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              _currency.format(price),
-                                              style: GoogleFonts.inter(
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 14,
-                                                color: AppleColors.primaryAccent,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ),
-
-              // "How are you Ordering" Section WITHOUT "See All"
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
                   child: Text(
                     'How are you Ordering',
                     style: GoogleFonts.inter(
                       color: AppleColors.textPrimary,
                       fontWeight: FontWeight.w800,
-                      fontSize: 18,
+                      fontSize: 17,
                     ),
                   ),
                 ),
@@ -1150,6 +996,197 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+
+              // 4. Promotion Banner Carousel
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 18),
+                  child: BannerCarousel(
+                    banners: menu.banners,
+                    onSeeAll: () => widget.onOpenMenu(),
+                    onBannerTap: () => widget.onOpenMenu(),
+                  ),
+                ),
+              ),
+
+              // 5. Featured Sizzling Items Section
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 26, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFBEB),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: Text(
+                          "CHEF'S SIZZLING FAVORITES",
+                          style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFFB45309),
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Featured Sizzling Items',
+                        style: GoogleFonts.domine(
+                          color: const Color(0xFF1F2937),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Piping hot cast-iron platters seared right off our charcoal fire.',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFF6B7280),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Builder(
+                  builder: (context) {
+                    final featuredItems = _getFeaturedSizzlingItems(menu.products);
+                    return SizedBox(
+                      height: 310,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: featuredItems.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 14),
+                        itemBuilder: (context, index) {
+                          final itemData = featuredItems[index];
+                          final prod = itemData['product'] as Product;
+                          final badge = itemData['badge'] as String;
+
+                          return _FeaturedSizzlingCard(
+                            product: prod,
+                            badgeText: badge,
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // Explore Full Menu & Order Online CTA Button
+              SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                    child: SizedBox(
+                      height: 42,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          AppleTheme.hapticFeedback();
+                          widget.onOpenMenu();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF59E0B),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                          padding: const EdgeInsets.symmetric(horizontal: 22),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'EXPLORE FULL MENU & ORDER ONLINE',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 11,
+                                letterSpacing: 0.5,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.arrow_outward, size: 14, color: Colors.white),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 6. Explore Our Sizzling Categories Section
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 28, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFBEB),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: Text(
+                          'SIGNATURE MENU LINEUP',
+                          style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFFB45309),
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Explore Our Sizzling Categories',
+                        style: GoogleFonts.domine(
+                          color: const Color(0xFF1F2937),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Signature sizzling categories straight from the fire.',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFF6B7280),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 240,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _sizzlingCategoriesData.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 14),
+                    itemBuilder: (context, index) {
+                      final cat = _sizzlingCategoriesData[index];
+                      return _SizzlingCategoryCard(
+                        title: cat['title'] as String,
+                        description: cat['description'] as String,
+                        imageUrl: cat['imageUrl'] as String,
+                        badgeText: cat['badge'] as String,
+                        onTap: () => widget.onOpenMenu(category: cat['category'] as MenuCategory),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -1248,51 +1285,451 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  List<Map<String, dynamic>> _getFeaturedSizzlingItems(List<Product> allProducts) {
+    final inasal = allProducts.where((p) => p.name.toLowerCase().contains('inasal')).firstOrNull ??
+        const Product(
+          id: 7,
+          name: 'Sizzling Chicken Inasal',
+          description: 'Bacolod-style chargrilled chicken quarter served sizzling with savory chicken oil and garlic rice.',
+          price: 120.0,
+          imagePath: 'https://saddle-ranch-web.onrender.com/images/Menu/chicken_inasal.webp',
+          category: 'Sizzling Rice Meals',
+          stockQuantity: 50,
+          isActive: true,
+        );
+
+    final sisig = allProducts.where((p) => p.name.toLowerCase().contains('sisig') && !p.name.toLowerCase().contains('platter')).firstOrNull ??
+        const Product(
+          id: 9,
+          name: 'Sizzling Sisig (w/ Egg)',
+          description: 'Crispy chopped pork seasoned with onions, calamansi, and chili, topped with a fresh egg.',
+          price: 100.0,
+          imagePath: 'https://saddle-ranch-web.onrender.com/images/Menu/sisig.webp',
+          category: 'Sizzling Rice Meals',
+          stockQuantity: 60,
+          isActive: true,
+        );
+
+    final teriyaki = allProducts.where((p) => p.name.toLowerCase().contains('teriyaki') && !p.name.toLowerCase().contains('platter')).firstOrNull ??
+        const Product(
+          id: 5,
+          name: 'Sizzling Beef Teriyaki',
+          description: 'Tender slices of beef glazed with sweet-savory teriyaki sauce on a sizzling platter.',
+          price: 140.0,
+          imagePath: 'https://saddle-ranch-web.onrender.com/images/Menu/beef_teriyaki.webp',
+          category: 'Sizzling Rice Meals',
+          stockQuantity: 50,
+          isActive: true,
+        );
+
+    return [
+      {'product': inasal, 'badge': 'CHICKEN INASAL'},
+      {'product': sisig, 'badge': 'SISIG'},
+      {'product': teriyaki, 'badge': 'BEEF TERIYAKI'},
+    ];
+  }
+
+  static const List<Map<String, dynamic>> _sizzlingCategoriesData = [
+    {
+      'title': 'Sizzling Rice Meals',
+      'description': 'Complete hearty platters with garlic rice, topped with tender meats and savory gravies on hot cast iron.',
+      'imageUrl': 'https://saddle-ranch-web.onrender.com/images/Menu/sisig.webp',
+      'badge': 'SISIG',
+      'category': MenuCategory.sizzling,
+    },
+    {
+      'title': 'Authentic Filipino Cuisine',
+      'description': 'Time-honored Filipino heritage recipes cooked sizzling hot with bold local seasonings and native flair.',
+      'imageUrl': 'https://saddle-ranch-web.onrender.com/images/FilipinoCousines/pork_sinigang.webp',
+      'badge': 'PORK SINIGANG',
+      'category': MenuCategory.filipino,
+    },
+    {
+      'title': 'Barkada Platters',
+      'description': 'Generous sharing platters made for group feasts, family gatherings, and roadhouse celebrations.',
+      'imageUrl': 'https://saddle-ranch-web.onrender.com/images/Platters/platter_sisig.webp',
+      'badge': 'SISIG PLATTER',
+      'category': MenuCategory.barkada,
+    },
+  ];
 }
 
-class _CategoryCard extends StatelessWidget {
+class _FeaturedSizzlingCard extends StatelessWidget {
+  final Product product;
+  final String badgeText;
+
+  const _FeaturedSizzlingCard({
+    required this.product,
+    required this.badgeText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cart = context.watch<CartProvider>();
+    final session = context.watch<OrderSessionProvider>();
+    final cartItem = cart.items.where((i) => i.product.id == product.id).firstOrNull;
+    final inCart = cartItem?.quantity ?? 0;
+    final price = product.priceForBranch(session.branch);
+    final normalizedImg = ImageUrlHelper.normalize(product.imagePath);
+
+    return Container(
+      width: 255,
+      decoration: BoxDecoration(
+        color: const Color(0xFF18181B),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF27272A), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Food Image with Badges
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
+                child: SizedBox(
+                  height: 135,
+                  width: double.infinity,
+                  child: normalizedImg != null && normalizedImg.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: normalizedImg,
+                          fit: BoxFit.cover,
+                          placeholder: (_, _) => Container(color: const Color(0xFF27272A)),
+                          errorWidget: (_, _, _) => Container(
+                            color: const Color(0xFF27272A),
+                            child: const Icon(Icons.fastfood, color: Color(0xFFF59E0B), size: 36),
+                          ),
+                        )
+                      : Container(
+                          color: const Color(0xFF27272A),
+                          child: const Icon(Icons.fastfood, color: Color(0xFFF59E0B), size: 36),
+                        ),
+                ),
+              ),
+              // Wooden / Amber Badge on Image
+              Positioned(
+                bottom: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF78350F).withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF92400E)),
+                  ),
+                  child: Text(
+                    badgeText.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+              // Red circular indicator dot
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDC2626),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFDC2626).withValues(alpha: 0.6),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Content & Actions
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.domine(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  product.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFFA1A1AA),
+                    fontSize: 11,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _currency.format(price),
+                  style: GoogleFonts.domine(
+                    color: const Color(0xFFF59E0B),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (inCart == 0)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 34,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        AppleTheme.hapticFeedback();
+                        cart.add(product);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF59E0B),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'ADD TO ORDER',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_forward, size: 12, color: Colors.white),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF27272A),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFF59E0B)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                          onPressed: () {
+                            AppleTheme.hapticFeedback();
+                            cart.updateQuantity(product.id, inCart - 1);
+                          },
+                          icon: Icon(
+                            inCart == 1 ? LucideIcons.trash2 : LucideIcons.minus,
+                            size: 14,
+                            color: inCart == 1 ? const Color(0xFFF43F5E) : const Color(0xFFF59E0B),
+                          ),
+                        ),
+                        Text(
+                          '$inCart in Cart',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            color: const Color(0xFFF59E0B),
+                          ),
+                        ),
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                          onPressed: () {
+                            AppleTheme.hapticFeedback();
+                            cart.add(product);
+                          },
+                          icon: const Icon(LucideIcons.plus, size: 14, color: Color(0xFFF59E0B)),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SizzlingCategoryCard extends StatelessWidget {
   final String title;
-  final Widget iconWidget;
+  final String description;
+  final String imageUrl;
+  final String badgeText;
   final VoidCallback onTap;
 
-  const _CategoryCard({
+  const _SizzlingCategoryCard({
     required this.title,
-    required this.iconWidget,
+    required this.description,
+    required this.imageUrl,
+    required this.badgeText,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7F7F8),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFEBEBEB)),
-            ),
-            child: Center(child: iconWidget),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: 76,
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              style: GoogleFonts.inter(
-                color: AppleColors.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-                height: 1.15,
-              ),
-            ),
+    final normalizedImg = ImageUrlHelper.normalize(imageUrl);
+
+    return Container(
+      width: 255,
+      decoration: BoxDecoration(
+        color: const Color(0xFF18181B),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF27272A), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: () {
+            AppleTheme.hapticFeedback();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Category Image with Badges
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
+                    child: SizedBox(
+                      height: 135,
+                      width: double.infinity,
+                      child: normalizedImg != null && normalizedImg.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: normalizedImg,
+                              fit: BoxFit.cover,
+                              placeholder: (_, _) => Container(color: const Color(0xFF27272A)),
+                              errorWidget: (_, _, _) => Container(
+                                color: const Color(0xFF27272A),
+                                child: const Icon(Icons.fastfood, color: Color(0xFFF59E0B), size: 36),
+                              ),
+                            )
+                          : Container(
+                              color: const Color(0xFF27272A),
+                              child: const Icon(Icons.fastfood, color: Color(0xFFF59E0B), size: 36),
+                            ),
+                    ),
+                  ),
+                  // Wooden / Amber Badge on Image
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF78350F).withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFF92400E)),
+                      ),
+                      child: Text(
+                        badgeText.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Red circular indicator dot
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDC2626),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFDC2626).withValues(alpha: 0.6),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.domine(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFFA1A1AA),
+                        fontSize: 11,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
