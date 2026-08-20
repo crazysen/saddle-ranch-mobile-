@@ -13,6 +13,7 @@ import '../providers/cart_provider.dart';
 import '../providers/order_session_provider.dart';
 import '../services/api_service.dart';
 import '../utils/cavite_locations.dart';
+import '../utils/image_url_helper.dart';
 import '../utils/ph_mobile_number.dart';
 import 'confirmation_modal.dart';
 
@@ -24,13 +25,31 @@ class ViewOrderModal extends StatefulWidget {
 
   const ViewOrderModal({super.key, this.onOrderPlaced});
 
-  static Future<void> show(BuildContext context, {VoidCallback? onOrderPlaced}) {
-    return showModalBottomSheet(
+  static Future<OrderResult?> show(BuildContext context, {VoidCallback? onOrderPlaced}) async {
+    final order = await showModalBottomSheet<OrderResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => ViewOrderModal(onOrderPlaced: onOrderPlaced),
     );
+
+    if (order != null && context.mounted) {
+      onOrderPlaced?.call();
+      final track = await ConfirmationModal.show(
+        context,
+        title: 'Order Placed!',
+        message: 'Order #${order.orderNumber} has been received by Saddle Ranch ${order.branch} Branch and sent to the kitchen.',
+        type: ConfirmationType.success,
+        confirmLabel: 'Track Order',
+        onConfirm: () {
+          AppTabController.switchTab?.call(1);
+        },
+      );
+      if (track == true || track == null) {
+        AppTabController.switchTab?.call(1);
+      }
+    }
+    return order;
   }
 
   @override
@@ -141,23 +160,7 @@ class _ViewOrderModalState extends State<ViewOrderModal> {
       cart.clear();
 
       if (!mounted) return;
-      final rootCtx = context;
-      Navigator.pop(context);
-
-      widget.onOrderPlaced?.call();
-
-      if (rootCtx.mounted) {
-        final track = await ConfirmationModal.show(
-          rootCtx,
-          title: 'Order Placed!',
-          message: 'Order #${order.orderNumber} has been received by Saddle Ranch $branch Branch and sent to the kitchen.',
-          type: ConfirmationType.success,
-          confirmLabel: 'Track Order',
-        );
-        if (track == true) {
-          AppTabController.switchTab?.call(1);
-        }
-      }
+      Navigator.of(context).pop(order);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -386,6 +389,7 @@ class _ViewOrderModalState extends State<ViewOrderModal> {
                 else
                   ...cart.items.map((item) {
                     final price = item.product.priceForBranch(session.branch);
+                    final itemImg = ImageUrlHelper.normalize(item.product.imagePath);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -406,9 +410,9 @@ class _ViewOrderModalState extends State<ViewOrderModal> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: item.product.imagePath != null && item.product.imagePath!.isNotEmpty
+                            child: itemImg != null && itemImg.isNotEmpty
                                 ? CachedNetworkImage(
-                                    imageUrl: item.product.imagePath!,
+                                    imageUrl: itemImg,
                                     width: 54,
                                     height: 54,
                                     fit: BoxFit.cover,

@@ -1,3 +1,5 @@
+import '../utils/image_url_helper.dart';
+
 class PromoBanner {
   final int id;
   final String title;
@@ -25,7 +27,7 @@ class PromoBanner {
       title: json['title'] as String? ?? '',
       subtitle: json['subtitle'] as String? ?? json['description'] as String?,
       badge: json['badge'] as String?,
-      imagePath: json['image_path'] as String?,
+      imagePath: ImageUrlHelper.normalize(json['image_path'] as String?),
       branch: json['branch'] as String? ?? 'all',
       isActive: json['is_active'] == true || json['is_active'] == 1,
       displayOrder: json['display_order'] as int? ?? 0,

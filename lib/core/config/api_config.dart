@@ -19,7 +19,12 @@ class ApiConfig {
   // 1. Auth Endpoints
   static String get login => '$baseUrl/auth/login';
   static String get register => '$baseUrl/customer/register';
-  static String get me => '$baseUrl/auth/me';
+  static String get me {
+    if (baseUrl.contains('/api/v1')) {
+      return baseUrl.replaceFirst('/api/v1', '/api/user');
+    }
+    return '$baseUrl/user';
+  }
   static String get logout => '$baseUrl/auth/logout';
 
   // 2. Menu & Banners Endpoints

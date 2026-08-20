@@ -156,7 +156,7 @@ class ApiService {
     );
   }
 
-  /// GET /auth/me - Fetch authenticated user profile details from database
+  /// GET /api/user - Fetch authenticated user profile details from database
   Future<AppUser> getProfile() async {
     final headers = await _buildHeaders();
     final response = await _client.get(
@@ -169,6 +169,18 @@ class ApiService {
       final userData = (body['user'] ?? body['data'] ?? body) as Map<String, dynamic>;
       return AppUser.fromJson(userData);
     }
+
+    // Fallback attempt to customer/me if available
+    try {
+      final fallbackResp = await _client.get(
+        Uri.parse('${ApiConfig.baseUrl}/customer/me'),
+        headers: headers,
+      );
+      final fbBody = _decode(fallbackResp);
+      if (fallbackResp.statusCode >= 200 && fallbackResp.statusCode < 300 && fbBody['user'] != null) {
+        return AppUser.fromJson(fbBody['user'] as Map<String, dynamic>);
+      }
+    } catch (_) {}
 
     throw ApiException(
       body['message']?.toString() ?? 'Failed to fetch user profile.',
@@ -313,12 +325,21 @@ class ApiService {
 
   /// GET /customer/vouchers - Available vouchers for authenticated user from database
   Future<List<Voucher>> fetchCustomerVouchers() async {
+    final token = await getToken();
+    if (token == null || token.isEmpty) return [];
+
     try {
       final headers = await _buildHeaders();
       final response = await _client.get(
         Uri.parse(ApiConfig.customerVouchers),
         headers: headers,
       );
+
+      if (response.statusCode == 401) {
+        await clearToken();
+        return [];
+      }
+
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final list = (body['data'] ?? body['vouchers'] ?? body) as List<dynamic>? ?? [];
@@ -413,7 +434,14 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
         final fetched = list.map((o) => OrderResult.fromJson(o as Map<String, dynamic>)).toList();
-        results.addAll(fetched);
+        for (final order in fetched) {
+          final existingIdx = results.indexWhere((r) => r.orderNumber == order.orderNumber);
+          if (existingIdx >= 0) {
+            results[existingIdx] = order;
+          } else {
+            results.add(order);
+          }
+        }
 
         // Update local cache with live database statuses from Web Admin / KDS / Cashier
         for (final item in fetched) {
@@ -437,17 +465,28 @@ class ApiService {
       }
     }
 
+    // Sort results by ID descending so newest orders appear at top
+    results.sort((a, b) => b.id.compareTo(a.id));
     return results;
   }
 
   /// GET /customer/orders - Historical orders for logged-in user from database
   Future<List<OrderResult>> fetchCustomerOrders() async {
+    final token = await getToken();
+    if (token == null || token.isEmpty) return [];
+
     try {
       final headers = await _buildHeaders();
       final response = await _client.get(
         Uri.parse(ApiConfig.customerOrders),
         headers: headers,
       );
+
+      if (response.statusCode == 401) {
+        await clearToken();
+        return [];
+      }
+
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];

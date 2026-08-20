@@ -1,3 +1,5 @@
+import '../utils/image_url_helper.dart';
+
 class Product {
   final int id;
   final String name;
@@ -6,6 +8,7 @@ class Product {
   final double? priceBulihan;
   final double? priceDasmarinas;
   final String? imagePath;
+  final String? category;
   final int stockQuantity;
   final int stockBulihan;
   final int stockDasmarinas;
@@ -19,6 +22,7 @@ class Product {
     this.priceBulihan,
     this.priceDasmarinas,
     this.imagePath,
+    this.category,
     required this.stockQuantity,
     this.stockBulihan = 0,
     this.stockDasmarinas = 0,
@@ -63,7 +67,8 @@ class Product {
       price: _toDouble(json['price']),
       priceBulihan: json['price_bulihan'] != null ? _toDouble(json['price_bulihan']) : null,
       priceDasmarinas: json['price_dasmarinas'] != null ? _toDouble(json['price_dasmarinas']) : null,
-      imagePath: json['image_path'] as String?,
+      imagePath: ImageUrlHelper.normalize(json['image_path'] as String?),
+      category: json['category'] as String?,
       stockQuantity: json['stock_quantity'] as int? ?? 0,
       stockBulihan: json['stock_bulihan'] as int? ?? 0,
       stockDasmarinas: json['stock_dasmarinas'] as int? ?? 0,
@@ -79,6 +84,7 @@ class Product {
         'price_bulihan': priceBulihan,
         'price_dasmarinas': priceDasmarinas,
         'image_path': imagePath,
+        'category': category,
         'stock_quantity': stockQuantity,
         'stock_bulihan': stockBulihan,
         'stock_dasmarinas': stockDasmarinas,
