@@ -325,12 +325,21 @@ class ApiService {
 
   /// GET /customer/vouchers - Available vouchers for authenticated user from database
   Future<List<Voucher>> fetchCustomerVouchers() async {
+    final token = await getToken();
+    if (token == null || token.isEmpty) return [];
+
     try {
       final headers = await _buildHeaders();
       final response = await _client.get(
         Uri.parse(ApiConfig.customerVouchers),
         headers: headers,
       );
+
+      if (response.statusCode == 401) {
+        await clearToken();
+        return [];
+      }
+
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final list = (body['data'] ?? body['vouchers'] ?? body) as List<dynamic>? ?? [];
@@ -407,24 +416,6 @@ class ApiService {
     try {
       final headers = await _buildHeaders();
 
-      // If authenticated, also fetch customer orders from database to get live backend state
-      final hasToken = await getToken() != null;
-      if (hasToken && (all || query == null || query.isEmpty)) {
-        try {
-          final custOrders = await fetchCustomerOrders();
-          for (final order in custOrders) {
-            if (!results.any((r) => r.orderNumber == order.orderNumber)) {
-              results.add(order);
-            }
-            // Sync local cache with customer orders from database
-            final idx = _localPlacedOrders.indexWhere((o) => o.orderNumber == order.orderNumber);
-            if (idx >= 0) {
-              _localPlacedOrders[idx] = order;
-            }
-          }
-        } catch (_) {}
-      }
-
       // If no query is provided, query all or include placed order numbers
       String? effectiveQuery = query;
       if ((effectiveQuery == null || effectiveQuery.isEmpty) && !all && _localPlacedOrders.isNotEmpty) {
@@ -481,12 +472,21 @@ class ApiService {
 
   /// GET /customer/orders - Historical orders for logged-in user from database
   Future<List<OrderResult>> fetchCustomerOrders() async {
+    final token = await getToken();
+    if (token == null || token.isEmpty) return [];
+
     try {
       final headers = await _buildHeaders();
       final response = await _client.get(
         Uri.parse(ApiConfig.customerOrders),
         headers: headers,
       );
+
+      if (response.statusCode == 401) {
+        await clearToken();
+        return [];
+      }
+
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
