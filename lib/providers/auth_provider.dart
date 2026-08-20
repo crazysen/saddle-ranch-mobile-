@@ -82,22 +82,6 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    final cleanEmail = email.trim().toLowerCase();
-    if (cleanEmail == 'customer@saddleranch.ph') {
-      return loginAsDemo(
-        email: 'customer@saddleranch.ph',
-        fullName: 'Juan Dela Cruz',
-        phone: '09171234567',
-      );
-    }
-    if (cleanEmail == 'dev@saddleranch.ph') {
-      return loginAsDemo(
-        email: 'dev@saddleranch.ph',
-        fullName: 'Dev Tester',
-        phone: '09998887766',
-      );
-    }
-
     _busy = true;
     _error = null;
     notifyListeners();
@@ -172,7 +156,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.register(
+      await _apiService.register(
         name: name,
         email: email,
         password: password,
@@ -180,18 +164,7 @@ class AuthProvider extends ChangeNotifier {
         phone: phone,
       );
 
-      AppUser user;
-      if (response['user'] is Map<String, dynamic>) {
-        user = AppUser.fromJson(response['user'] as Map<String, dynamic>);
-      } else if (response['data'] is Map<String, dynamic> &&
-          (response['data'] as Map<String, dynamic>)['user'] is Map<String, dynamic>) {
-        user = AppUser.fromJson((response['data'] as Map<String, dynamic>)['user'] as Map<String, dynamic>);
-      } else {
-        user = await _apiService.getProfile();
-      }
-
-      _user = user;
-      await _persistLocalUserData(user);
+      // Do NOT set _user or auto-login. Redirect user to login page.
       _error = null;
       return true;
     } on ApiException catch (e) {

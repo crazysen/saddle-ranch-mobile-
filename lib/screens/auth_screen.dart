@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
@@ -20,8 +22,8 @@ class _AuthScreenState extends State<AuthScreen> {
   final _signUpFormKey = GlobalKey<FormState>();
 
   // Login Controllers
-  final _loginEmailController = TextEditingController(text: 'customer@saddleranch.ph');
-  final _loginPasswordController = TextEditingController(text: 'customer123');
+  final _loginEmailController = TextEditingController();
+  final _loginPasswordController = TextEditingController();
 
   // Sign Up Controllers
   final _signUpNameController = TextEditingController();
@@ -35,6 +37,11 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _signUpObscureConfirmPassword = true;
   bool _rememberMe = true;
 
+  String? _loginErrorMessage;
+  String? _signUpErrorMessage;
+  Timer? _loginErrorTimer;
+  Timer? _signUpErrorTimer;
+
   static const Color _primaryOrange = Color(0xFFFF5500);
   static const Color _inputBackground = Color(0xFFF2F2F7);
   static const Color _mutedText = Color(0xFF71717A);
@@ -43,6 +50,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   void dispose() {
+    _loginErrorTimer?.cancel();
+    _signUpErrorTimer?.cancel();
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
     _signUpNameController.dispose();
@@ -55,32 +64,53 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _switchToSignUp() {
     AppleTheme.hapticFeedback();
-    setState(() => _isSignUp = true);
+    _loginErrorTimer?.cancel();
+    _signUpErrorTimer?.cancel();
+    setState(() {
+      _loginErrorMessage = null;
+      _signUpErrorMessage = null;
+      _isSignUp = true;
+    });
   }
 
   void _switchToLogin() {
     AppleTheme.hapticFeedback();
-    setState(() => _isSignUp = false);
+    _loginErrorTimer?.cancel();
+    _signUpErrorTimer?.cancel();
+    setState(() {
+      _loginErrorMessage = null;
+      _signUpErrorMessage = null;
+      _isSignUp = false;
+    });
   }
 
   Future<void> _handleLoginSubmit() async {
     AppleTheme.hapticFeedback();
     if (!_loginFormKey.currentState!.validate()) return;
 
+    _loginErrorTimer?.cancel();
+    setState(() => _loginErrorMessage = null);
+
     final auth = context.read<AuthProvider>();
     final success = await auth.loginWithEmail(
-      email: _loginEmailController.text,
+      email: _loginEmailController.text.trim(),
       password: _loginPasswordController.text,
     );
 
     if (!mounted) return;
-    if (!success && auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppleColors.danger,
-        ),
-      );
+    if (!success) {
+      final errorMsg = auth.error ?? 'Invalid login credentials';
+      setState(() {
+        _loginErrorMessage = errorMsg;
+      });
+      _loginErrorTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _loginErrorMessage = null;
+          });
+        }
+      });
+      // No snackbar for invalid login credentials
     }
   }
 
@@ -88,23 +118,46 @@ class _AuthScreenState extends State<AuthScreen> {
     AppleTheme.hapticFeedback();
     if (!_signUpFormKey.currentState!.validate()) return;
 
+    _signUpErrorTimer?.cancel();
+    setState(() => _signUpErrorMessage = null);
+
+    final email = _signUpEmailController.text.trim();
     final auth = context.read<AuthProvider>();
     final success = await auth.register(
-      name: _signUpNameController.text,
-      email: _signUpEmailController.text,
+      name: _signUpNameController.text.trim(),
+      email: email,
       password: _signUpPasswordController.text,
       passwordConfirmation: _signUpConfirmPasswordController.text,
-      phone: _signUpPhoneController.text,
+      phone: _signUpPhoneController.text.trim(),
     );
 
     if (!mounted) return;
-    if (!success && auth.error != null) {
+    if (success) {
+      _switchToLogin();
+      _loginEmailController.text = email;
+      _loginPasswordController.clear();
+      _signUpPasswordController.clear();
+      _signUpConfirmPasswordController.clear();
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: AppleColors.danger,
+        const SnackBar(
+          content: Text('Account created successfully! Please log in to continue.'),
+          backgroundColor: Color(0xFF2E7D32),
+          duration: Duration(seconds: 4),
         ),
       );
+    } else {
+      final errorMsg = auth.error ?? 'Registration failed. Please try again.';
+      setState(() {
+        _signUpErrorMessage = errorMsg;
+      });
+      _signUpErrorTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _signUpErrorMessage = null;
+          });
+        }
+      });
     }
   }
 
@@ -169,50 +222,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                   ),
 
-                  // Top-Left SR Emblem Badge
-                  Positioned(
-                    top: topPadding + 16,
-                    left: 20,
-                    child: Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFDFBF7),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'SR',
-                            style: GoogleFonts.domine(
-                              color: _darkText,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              height: 1.1,
-                            ),
-                          ),
-                          Text(
-                            'Saddle Ranch',
-                            style: GoogleFonts.inter(
-                              color: _mutedText,
-                              fontSize: 7,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Hero Title Headline Text
+                  // Hero Title Headline Text (Logo removed from top-left)
                   Positioned(
                     left: 24,
                     right: 24,
@@ -326,7 +336,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 24),
 
-              if (auth.error != null) ...[
+              if (_loginErrorMessage != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
@@ -335,14 +345,23 @@ class _AuthScreenState extends State<AuthScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppleColors.danger.withValues(alpha: 0.3)),
                   ),
-                  child: Text(
-                    auth.error!,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      color: AppleColors.danger,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.alertCircle, size: 16, color: AppleColors.danger),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          _loginErrorMessage!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            color: AppleColors.danger,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -614,7 +633,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 24),
 
-              if (auth.error != null) ...[
+              if (_signUpErrorMessage != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
@@ -623,19 +642,28 @@ class _AuthScreenState extends State<AuthScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppleColors.danger.withValues(alpha: 0.3)),
                   ),
-                  child: Text(
-                    auth.error!,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      color: AppleColors.danger,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.alertCircle, size: 16, color: AppleColors.danger),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          _signUpErrorMessage!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            color: AppleColors.danger,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
 
-              // 1. Full Name
+              // 1. Full Name (Letters and spaces only, no numbers)
               Text(
                 'Full Name',
                 style: GoogleFonts.inter(
@@ -648,6 +676,9 @@ class _AuthScreenState extends State<AuthScreen> {
               TextFormField(
                 controller: _signUpNameController,
                 textCapitalization: TextCapitalization.words,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s\.\-]')),
+                ],
                 autocorrect: false,
                 enableSuggestions: false,
                 style: GoogleFonts.inter(color: _darkText, fontSize: 14),
@@ -667,12 +698,19 @@ class _AuthScreenState extends State<AuthScreen> {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter your full name.';
                   }
+                  final clean = value.trim();
+                  if (!RegExp(r'^[a-zA-Z\s\.\-]+$').hasMatch(clean)) {
+                    return 'Full name must contain letters only (no numbers).';
+                  }
+                  if (clean.length < 2) {
+                    return 'Full name must be at least 2 characters.';
+                  }
                   return null;
                 },
               ),
               const SizedBox(height: 14),
 
-              // 2. Email Address
+              // 2. Email Address (Proper email regex validation)
               Text(
                 'Email Address',
                 style: GoogleFonts.inter(
@@ -704,17 +742,18 @@ class _AuthScreenState extends State<AuthScreen> {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter your email address.';
                   }
-                  if (!value.contains('@') || !value.contains('.')) {
-                    return 'Please enter a valid email address.';
+                  final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                  if (!emailRegex.hasMatch(value.trim())) {
+                    return 'Please enter a valid email address (e.g. name@example.com).';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 14),
 
-              // 3. Phone Number [Optional]
+              // 3. Phone Number (Starts with 09 and exactly 11 digits)
               Text(
-                'Phone Number [Optional]',
+                'Phone Number',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -725,6 +764,10 @@ class _AuthScreenState extends State<AuthScreen> {
               TextFormField(
                 controller: _signUpPhoneController,
                 keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11),
+                ],
                 autocorrect: false,
                 enableSuggestions: false,
                 style: GoogleFonts.inter(color: _darkText, fontSize: 14),
@@ -740,6 +783,22 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your mobile phone number.';
+                  }
+                  final clean = value.trim();
+                  if (!clean.startsWith('09')) {
+                    return 'Phone number must start with 09.';
+                  }
+                  if (clean.length != 11) {
+                    return 'Phone number must be exactly 11 digits (e.g. 09171234567).';
+                  }
+                  if (!RegExp(r'^09\d{9}$').hasMatch(clean)) {
+                    return 'Please enter a valid 11-digit mobile number.';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 14),
 

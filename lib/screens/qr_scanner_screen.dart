@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_theme.dart';
 import '../providers/order_session_provider.dart';
+import '../theme/apple_theme.dart';
 import '../utils/deep_link_parser.dart';
 
 class QrScannerScreen extends StatefulWidget {
@@ -16,12 +19,10 @@ class QrScannerScreen extends StatefulWidget {
 class _QrScannerScreenState extends State<QrScannerScreen> {
   final _controller = MobileScannerController();
   bool _handled = false;
-  final _manualCtrl = TextEditingController();
 
   @override
   void dispose() {
     _controller.dispose();
-    _manualCtrl.dispose();
     super.dispose();
   }
 
@@ -29,11 +30,117 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     if (_handled || !mounted) return;
     _handled = true;
     final normalized = table.padLeft(2, '0');
-    context.read<OrderSessionProvider>().startDineInFromTable(table);
-    final messenger = ScaffoldMessenger.of(context);
-    Navigator.of(context).pop(table);
-    messenger.showSnackBar(
-      SnackBar(content: Text('Table $normalized ready — order from your seat')),
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (modalCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Table #$normalized Recognized',
+                  style: GoogleFonts.domine(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: AppleColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Select how you would like your order served:',
+                  style: GoogleFonts.inter(color: AppleColors.mutedText, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+
+                // Dine-In Option
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(color: Color(0xFFE5E5E7)),
+                  ),
+                  tileColor: const Color(0xFFF7F7F8),
+                  leading: const Icon(LucideIcons.utensils, color: AppleColors.primaryAccent),
+                  title: Text(
+                    'Dine-In',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  subtitle: Text(
+                    'Served hot on sizzling platters directly to Table #$normalized.',
+                    style: GoogleFonts.inter(fontSize: 12, color: AppleColors.mutedText),
+                  ),
+                  onTap: () {
+                    context.read<OrderSessionProvider>().startDineInFromTable(
+                          normalized,
+                          fulfillment: OrderMode.dineIn,
+                        );
+                    Navigator.pop(modalCtx);
+                    Navigator.pop(context, normalized);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Table $normalized Dine-In activated!'),
+                        backgroundColor: AppleColors.primaryAccent,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                // Express Takeout Option
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(color: Color(0xFFE5E5E7)),
+                  ),
+                  tileColor: const Color(0xFFF7F7F8),
+                  leading: const Icon(LucideIcons.packageCheck, color: Color(0xFFE65100)),
+                  title: Text(
+                    'Express Takeout (To-Go)',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  subtitle: Text(
+                    'Packaged to-go while sitting in-house.',
+                    style: GoogleFonts.inter(fontSize: 12, color: AppleColors.mutedText),
+                  ),
+                  onTap: () {
+                    context.read<OrderSessionProvider>().startDineInFromTable(
+                          normalized,
+                          fulfillment: OrderMode.expressTakeout,
+                        );
+                    Navigator.pop(modalCtx);
+                    Navigator.pop(context, normalized);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Table $normalized Express Takeout activated!'),
+                        backgroundColor: const Color(0xFFE65100),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -65,79 +172,38 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan table QR', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text('Scan Table QR Code', style: TextStyle(fontWeight: FontWeight.w900)),
       ),
-      body: Column(
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                MobileScanner(
-                  controller: _controller,
-                  onDetect: _onDetect,
-                ),
-                Center(
-                  child: Container(
-                    width: 240,
-                    height: 240,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.amber, width: 3),
-                    ),
-                  ),
-                ),
-                const Positioned(
-                  left: 24,
-                  right: 24,
-                  bottom: 24,
-                  child: Text(
-                    'Point at the QR on your table tent',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      shadows: [Shadow(blurRadius: 8, color: Colors.black)],
-                    ),
-                  ),
-                ),
-              ],
+          MobileScanner(
+            controller: _controller,
+            onDetect: _onDetect,
+          ),
+          Center(
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.amber, width: 3),
+              ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-            color: AppColors.surface,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Or enter table number',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _manualCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          hintText: 'e.g. 05',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        final value = _manualCtrl.text.trim();
-                        if (value.isEmpty) return;
-                        _applyTable(value);
-                      },
-                      child: const Text('Go'),
-                    ),
-                  ],
-                ),
-              ],
+          const Positioned(
+            left: 24,
+            right: 24,
+            bottom: 48,
+            child: Text(
+              'Point your camera at the QR code on your table tent',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+              ),
             ),
           ),
         ],

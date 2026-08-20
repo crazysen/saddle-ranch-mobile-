@@ -1,239 +1,256 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme/app_theme.dart';
 import '../models/promo_banner.dart';
+import '../theme/apple_theme.dart';
 import '../utils/menu_category.dart';
 
-/// Simple sideways-draggable promo placeholders (4 cards) with images.
-class BannerCarousel extends StatelessWidget {
+/// Promotion Banner Carousel matching Saddle Ranch Web 1:1
+class BannerCarousel extends StatefulWidget {
   final List<PromoBanner> banners;
   final VoidCallback? onSeeAll;
+  final VoidCallback? onBannerTap;
   final ValueChanged<MenuCategory>? onPromoTap;
+  final Duration? autoPlayInterval;
 
   const BannerCarousel({
     super.key,
     required this.banners,
     this.onSeeAll,
+    this.onBannerTap,
     this.onPromoTap,
-    Duration? autoPlayInterval,
+    this.autoPlayInterval,
   });
 
-  static const _placeholders = [
-    _PromoPlaceholder(
-      title: 'Weekend Sizzling Specials',
-      subtitle: 'Up to 15% off barkada platters',
-      badge: 'HOT',
-      category: MenuCategory.barkada,
-      imageUrl:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuASVSO6N3lzIbdlCDT85viSxOZiQKjWADlA5k7ymludjTdSCB7tqV0bZvXRba3-L4gemLyqy9PxmqnYMBnSsxb5yfI_XM-qajS5ZEnS1Am8OBu5uN8_smBFlDdy4xR0UNE8jDFJP8vNSRQcqqDSG4p-oDij5kCvWALcyBZVeuA1QdnqC9a6I5s9l2ba3Zjfe0xSPjMr0jLCAB1z-oJS5xBL9meeUeFsmiMgjQ96VoXotgHsy3Jl3d9NQIv1liJsKeu_sJec2rrkNziY',
-    ),
-    _PromoPlaceholder(
-      title: 'Sisig Night Combo',
-      subtitle: 'Free iced tea on ₱499+',
-      badge: 'DEAL',
-      category: MenuCategory.filipino,
-      imageUrl:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDt2cP7W6u7Hw-wJCWrbYiEh20Z4b79UCpbKxmmyVbQzw0xlTklDnEKOpEzeymppd9l-ODs0TOelRWM0iLgwF8K_OKfXIBpTO8lSH0yyxPtaMCTQrzQ4ykSkJPDryw9S9IBB1wNoeHFGtHcQDy4MEVr0_tUDss7SKe1fe58XBlXeql1nJ1D2J0zJ0ZFO4qRm213kO813mLEdYdUMjsTD0J2PtB7cz_0FmmDHccmacBmhMyp7a_fJ7teNVsG3sgWyfW24O1p08mnUE9t',
-    ),
-    _PromoPlaceholder(
-      title: 'Bulalo Steak Feast',
-      subtitle: 'Share for 2–3 people',
-      badge: 'NEW',
-      category: MenuCategory.filipino,
-      imageUrl:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCatSLXJ-mynm_AwjLXsdG9xKbMwziehShgiNtyXaX2NZEeZFhSXaTmHMgLuACAitSC3WZ0g_9lSTavvnqO4eKFlaC0pnnA9OngEMtRicl0vfSF2_t4WqzxTKxW-H-X0i_tppiClzEOZ-fAuu1ezCbRVOcdVdwZHokttY1ATDIO4BuA185dwrm0QDuPpYjQ7qD9ybH5bl0WPn1wHJ3S5pB6JuCOoocWTfZ95cB0Lfqx1KbjbUwqGJxkhwxmqypEJta64yq1PajT3oWC',
-    ),
-    _PromoPlaceholder(
-      title: 'House Red Iced Tea',
-      subtitle: 'Chilled pitcher for the barkada',
-      badge: 'DRINKS',
-      category: MenuCategory.drinks,
-      imageUrl:
-          'https://images.unsplash.com/photo-1556679343-c7306c197cfe?auto=format&fit=crop&w=800&q=80',
-    ),
-  ];
+  static const placeholders = <PromoBanner>[];
+
+  @override
+  State<BannerCarousel> createState() => _BannerCarouselState();
+}
+
+class _BannerCarouselState extends State<BannerCarousel> {
+  final PageController _pageController = PageController();
+  int _currentIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    final interval = widget.autoPlayInterval ?? const Duration(seconds: 5);
+    _timer = Timer.periodic(interval, (_) {
+      final bannerCount = widget.banners.isNotEmpty ? widget.banners.length : 1;
+      if (_pageController.hasClients && bannerCount > 1) {
+        final next = (_currentIndex + 1) % bannerCount;
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 8, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: onSeeAll,
-                  borderRadius: BorderRadius.circular(8),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 4),
-                    child: Text(
-                      'Promos for you',
-                      style: TextStyle(
-                        color: Color(0xFF1A1A1B),
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              if (onSeeAll != null)
-                IconButton(
-                  onPressed: onSeeAll,
-                  icon: const Icon(Icons.chevron_right, color: AppColors.muted),
-                ),
-            ],
+    final banners = widget.banners;
+
+    if (banners.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          height: 160,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFF2C2C2E)),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(color: Color(0xFFFFA000)),
           ),
         ),
+      );
+    }
+
+    return Column(
+      children: [
         SizedBox(
-          height: 210,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _placeholders.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
+          height: 165,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() => _currentIndex = index);
+            },
+            itemCount: banners.length,
             itemBuilder: (context, index) {
-              final promo = _placeholders[index];
-              return SizedBox(
-                width: 280,
-                child: _PromoCard(
-                  data: promo,
+              final promo = banners[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GestureDetector(
                   onTap: () {
-                    onPromoTap?.call(promo.category);
-                    if (onPromoTap == null) onSeeAll?.call();
+                    AppleTheme.hapticFeedback();
+                    widget.onBannerTap?.call();
+                    widget.onSeeAll?.call();
                   },
+                  child: Container(
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141416),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Background Food Banner Image
+                        if (promo.imagePath != null && promo.imagePath!.isNotEmpty)
+                          CachedNetworkImage(
+                            imageUrl: promo.imagePath!,
+                            fit: BoxFit.cover,
+                            placeholder: (_, _) => Container(color: const Color(0xFF1C1C1E)),
+                            errorWidget: (_, _, _) => Container(
+                              color: const Color(0xFF1C1C1E),
+                              child: const Icon(Icons.fastfood, color: Color(0xFFFFA000), size: 40),
+                            ),
+                          )
+                        else
+                          Container(
+                            color: const Color(0xFF1C1C1E),
+                            child: const Icon(Icons.fastfood, color: Color(0xFFFFA000), size: 40),
+                          ),
+
+                        // Gradient Scrim Overlay for high readability
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.85),
+                                Colors.black.withValues(alpha: 0.45),
+                                Colors.black.withValues(alpha: 0.1),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Text & CTA overlay
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (promo.branch.isNotEmpty && promo.branch.toLowerCase() != 'all')
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFA000),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '${promo.branch.toUpperCase()} BRANCH',
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 9,
+                                      color: Colors.black,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              Text(
+                                promo.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.domine(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 18,
+                                  height: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 34,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    AppleTheme.hapticFeedback();
+                                    widget.onBannerTap?.call();
+                                    widget.onSeeAll?.call();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFA000),
+                                    foregroundColor: Colors.black,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Order Now',
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 12,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               );
             },
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _PromoPlaceholder {
-  final String title;
-  final String subtitle;
-  final String badge;
-  final String imageUrl;
-  final MenuCategory category;
-
-  const _PromoPlaceholder({
-    required this.title,
-    required this.subtitle,
-    required this.badge,
-    required this.imageUrl,
-    required this.category,
-  });
-}
-
-class _PromoCard extends StatelessWidget {
-  final _PromoPlaceholder data;
-  final VoidCallback? onTap;
-
-  const _PromoCard({required this.data, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            CachedNetworkImage(
-              imageUrl: data.imageUrl,
-              fit: BoxFit.cover,
-              placeholder: (_, _) => Container(
-                color: AppColors.surfaceAlt,
-                alignment: Alignment.center,
-                child: const CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.amber,
-                ),
-              ),
-              errorWidget: (_, _, _) => Container(
-                color: AppColors.surfaceAlt,
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.local_fire_department,
-                  color: AppColors.amber,
-                  size: 40,
-                ),
-              ),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.75),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              top: 10,
-              left: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        if (banners.length > 1) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(banners.length, (i) {
+              final active = i == _currentIndex;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                height: 6,
+                width: active ? 18 : 6,
                 decoration: BoxDecoration(
-                  color: AppColors.amber,
-                  borderRadius: BorderRadius.circular(6),
+                  color: active
+                      ? const Color(0xFFFFA000)
+                      : const Color(0xFFE0E0E0).withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
-                  data.badge,
-                  style: const TextStyle(
-                    color: AppColors.onAmber,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    data.subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+              );
+            }),
+          ),
+        ],
+      ],
     );
   }
 }
