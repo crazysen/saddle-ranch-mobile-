@@ -1015,28 +1015,10 @@ class _HomeScreenState extends State<HomeScreen> {
               // 5. Featured Sizzling Items Section
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 26, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFFBEB),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFFDE68A)),
-                        ),
-                        child: Text(
-                          "CHEF'S SIZZLING FAVORITES",
-                          style: GoogleFonts.inter(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFFB45309),
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
                       Text(
                         'Featured Sizzling Items',
                         style: GoogleFonts.domine(
@@ -1083,72 +1065,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-              // Explore Full Menu & Order Online CTA Button
-              SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                    child: SizedBox(
-                      height: 42,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          AppleTheme.hapticFeedback();
-                          widget.onOpenMenu();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF59E0B),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-                          padding: const EdgeInsets.symmetric(horizontal: 22),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'EXPLORE FULL MENU & ORDER ONLINE',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 11,
-                                letterSpacing: 0.5,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.arrow_outward, size: 14, color: Colors.white),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
 
               // 6. Explore Our Sizzling Categories Section
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 28, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFFBEB),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFFDE68A)),
-                        ),
-                        child: Text(
-                          'SIGNATURE MENU LINEUP',
-                          style: GoogleFonts.inter(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFFB45309),
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
                       Text(
                         'Explore Our Sizzling Categories',
                         style: GoogleFonts.domine(
@@ -1376,14 +1300,14 @@ class _FeaturedSizzlingCard extends StatelessWidget {
     return Container(
       width: 255,
       decoration: BoxDecoration(
-        color: const Color(0xFF18181B),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF27272A), width: 1),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -1402,14 +1326,14 @@ class _FeaturedSizzlingCard extends StatelessWidget {
                       ? CachedNetworkImage(
                           imageUrl: normalizedImg,
                           fit: BoxFit.cover,
-                          placeholder: (_, _) => Container(color: const Color(0xFF27272A)),
+                          placeholder: (_, _) => Container(color: const Color(0xFFF3F4F6)),
                           errorWidget: (_, _, _) => Container(
-                            color: const Color(0xFF27272A),
+                            color: const Color(0xFFF3F4F6),
                             child: const Icon(Icons.fastfood, color: Color(0xFFF59E0B), size: 36),
                           ),
                         )
                       : Container(
-                          color: const Color(0xFF27272A),
+                          color: const Color(0xFFF3F4F6),
                           child: const Icon(Icons.fastfood, color: Color(0xFFF59E0B), size: 36),
                         ),
                 ),
@@ -1470,7 +1394,7 @@ class _FeaturedSizzlingCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.domine(
-                    color: Colors.white,
+                    color: const Color(0xFF1F2937),
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -1481,7 +1405,7 @@ class _FeaturedSizzlingCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    color: const Color(0xFFA1A1AA),
+                    color: const Color(0xFF6B7280),
                     fontSize: 11,
                     height: 1.25,
                   ),
@@ -1534,7 +1458,7 @@ class _FeaturedSizzlingCard extends StatelessWidget {
                   Container(
                     height: 34,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF27272A),
+                      color: const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: const Color(0xFFF59E0B)),
                     ),
@@ -1551,7 +1475,7 @@ class _FeaturedSizzlingCard extends StatelessWidget {
                           icon: Icon(
                             inCart == 1 ? LucideIcons.trash2 : LucideIcons.minus,
                             size: 14,
-                            color: inCart == 1 ? const Color(0xFFF43F5E) : const Color(0xFFF59E0B),
+                            color: inCart == 1 ? const Color(0xFFEF4444) : const Color(0xFFB45309),
                           ),
                         ),
                         Text(
@@ -1559,7 +1483,7 @@ class _FeaturedSizzlingCard extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
-                            color: const Color(0xFFF59E0B),
+                            color: const Color(0xFFB45309),
                           ),
                         ),
                         IconButton(
@@ -1569,7 +1493,7 @@ class _FeaturedSizzlingCard extends StatelessWidget {
                             AppleTheme.hapticFeedback();
                             cart.add(product);
                           },
-                          icon: const Icon(LucideIcons.plus, size: 14, color: Color(0xFFF59E0B)),
+                          icon: const Icon(LucideIcons.plus, size: 14, color: Color(0xFFB45309)),
                         ),
                       ],
                     ),
@@ -1605,14 +1529,14 @@ class _SizzlingCategoryCard extends StatelessWidget {
     return Container(
       width: 255,
       decoration: BoxDecoration(
-        color: const Color(0xFF18181B),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF27272A), width: 1),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -1640,14 +1564,14 @@ class _SizzlingCategoryCard extends StatelessWidget {
                           ? CachedNetworkImage(
                               imageUrl: normalizedImg,
                               fit: BoxFit.cover,
-                              placeholder: (_, _) => Container(color: const Color(0xFF27272A)),
+                              placeholder: (_, _) => Container(color: const Color(0xFFF3F4F6)),
                               errorWidget: (_, _, _) => Container(
-                                color: const Color(0xFF27272A),
+                                color: const Color(0xFFF3F4F6),
                                 child: const Icon(Icons.fastfood, color: Color(0xFFF59E0B), size: 36),
                               ),
                             )
                           : Container(
-                              color: const Color(0xFF27272A),
+                              color: const Color(0xFFF3F4F6),
                               child: const Icon(Icons.fastfood, color: Color(0xFFF59E0B), size: 36),
                             ),
                     ),
@@ -1708,7 +1632,7 @@ class _SizzlingCategoryCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.domine(
-                        color: Colors.white,
+                        color: const Color(0xFF1F2937),
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -1719,7 +1643,7 @@ class _SizzlingCategoryCard extends StatelessWidget {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: const Color(0xFFA1A1AA),
+                        color: const Color(0xFF6B7280),
                         fontSize: 11,
                         height: 1.25,
                       ),

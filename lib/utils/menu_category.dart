@@ -56,37 +56,64 @@ extension MenuCategoryX on MenuCategory {
 }
 
 MenuCategory categoryForProduct(Product product) {
-  final cat = (product.category ?? '').toLowerCase();
-  final name = product.name.toLowerCase();
+  final name = product.name.toLowerCase().trim();
+  final cat = (product.category ?? '').toLowerCase().trim();
 
-  // 1. Drinks & Extra Rice
-  if (cat.contains('drink') ||
-      (cat.contains('rice') && cat.contains('extra')) ||
-      name.contains('tea') ||
-      name.contains('cucumber') ||
-      name.contains('extra rice') ||
-      name.contains('beverage') ||
-      name.contains('juice') ||
-      name.contains('soda')) {
-    return MenuCategory.drinks;
-  }
-
-  // 2. Barkada Platters
-  if (cat.contains('platter') ||
-      cat.contains('barkada') ||
-      name.startsWith('platter')) {
+  // 1. Barkada Platters (Platters always go to Barkada Platters)
+  if (name.startsWith('platter') ||
+      name.contains('platter') ||
+      cat.contains('platter') ||
+      cat.contains('barkada')) {
     return MenuCategory.barkada;
   }
 
-  // 3. Authentic Filipino Cuisine
-  if (cat.contains('filipino') ||
-      name.contains('kare-kare') ||
+  // 2. Authentic Filipino Cuisine (Heritage classics)
+  if (name.contains('kare-kare') ||
       name.contains('adobo') ||
-      name.contains('sinigang')) {
+      name.contains('sinigang') ||
+      name.contains('bulalo') ||
+      name.contains('lechon') ||
+      cat.contains('filipino') ||
+      cat.contains('authentic')) {
     return MenuCategory.filipino;
   }
 
-  // 4. Sizzling Rice Meals (Default)
+  // 3. Sizzling Rice Meals (Explicit Sizzling Dishes & Rice Meals - including Sizzling Burger Steak!)
+  if (name.contains('burger') ||
+      name.contains('steak') ||
+      name.contains('inasal') ||
+      name.contains('sisig') ||
+      name.contains('porkchop') ||
+      name.contains('pork chop') ||
+      name.contains('tapsilog') ||
+      name.contains('tocilog') ||
+      name.contains('tilapia') ||
+      name.contains('bangus') ||
+      name.contains('spicy beef') ||
+      name.contains('teriyaki') ||
+      name.contains('sizzling') ||
+      (cat.contains('sizzling') && !name.contains('extra rice')) ||
+      (cat.contains('rice meal') && !name.contains('extra rice'))) {
+    return MenuCategory.sizzling;
+  }
+
+  // 4. Drinks and Extra Rice (Only actual drinks, beverages, and extra rice!)
+  if (name.contains('tea') ||
+      name.contains('cucumber') ||
+      name.contains('extra rice') ||
+      name.contains('juice') ||
+      name.contains('soda') ||
+      name.contains('beverage') ||
+      name.contains('pitcher') ||
+      name.contains('drink') ||
+      name == 'extra rice' ||
+      name == 'rice' ||
+      cat.contains('drink') ||
+      (cat.contains('extra') && cat.contains('rice'))) {
+    return MenuCategory.drinks;
+  }
+
+  // 5. Default fallback to Sizzling Rice Meals
   return MenuCategory.sizzling;
 }
 

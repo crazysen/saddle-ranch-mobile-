@@ -407,6 +407,24 @@ class ApiService {
     try {
       final headers = await _buildHeaders();
 
+      // If authenticated, also fetch customer orders from database to get live backend state
+      final hasToken = await getToken() != null;
+      if (hasToken && (all || query == null || query.isEmpty)) {
+        try {
+          final custOrders = await fetchCustomerOrders();
+          for (final order in custOrders) {
+            if (!results.any((r) => r.orderNumber == order.orderNumber)) {
+              results.add(order);
+            }
+            // Sync local cache with customer orders from database
+            final idx = _localPlacedOrders.indexWhere((o) => o.orderNumber == order.orderNumber);
+            if (idx >= 0) {
+              _localPlacedOrders[idx] = order;
+            }
+          }
+        } catch (_) {}
+      }
+
       // If no query is provided, query all or include placed order numbers
       String? effectiveQuery = query;
       if ((effectiveQuery == null || effectiveQuery.isEmpty) && !all && _localPlacedOrders.isNotEmpty) {
@@ -425,7 +443,14 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
         final fetched = list.map((o) => OrderResult.fromJson(o as Map<String, dynamic>)).toList();
-        results.addAll(fetched);
+        for (final order in fetched) {
+          final existingIdx = results.indexWhere((r) => r.orderNumber == order.orderNumber);
+          if (existingIdx >= 0) {
+            results[existingIdx] = order;
+          } else {
+            results.add(order);
+          }
+        }
 
         // Update local cache with live database statuses from Web Admin / KDS / Cashier
         for (final item in fetched) {

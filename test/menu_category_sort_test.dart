@@ -56,8 +56,18 @@ void main() {
         stockQuantity: 10,
         isActive: true,
       );
+      const burgerSteak = Product(
+        id: 6,
+        name: 'Sizzling Burger Steak',
+        description: 'Tender burger patties in mushroom gravy',
+        price: 95,
+        stockQuantity: 10,
+        isActive: true,
+        category: 'Drinks & Extra Rice', // Test corrupted/legacy category tag
+      );
 
       expect(categoryForProduct(riceMeal), MenuCategory.sizzling);
+      expect(categoryForProduct(burgerSteak), MenuCategory.sizzling);
       expect(categoryForProduct(filipino), MenuCategory.filipino);
       expect(categoryForProduct(barkada), MenuCategory.barkada);
       expect(categoryForProduct(drinks), MenuCategory.drinks);
