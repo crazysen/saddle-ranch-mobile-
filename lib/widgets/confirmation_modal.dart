@@ -40,6 +40,7 @@ class ConfirmationModal extends StatelessWidget {
     return showDialog<bool>(
       context: context,
       barrierDismissible: true,
+      useRootNavigator: true,
       builder: (ctx) => ConfirmationModal(
         title: title,
         message: message,
@@ -47,11 +48,11 @@ class ConfirmationModal extends StatelessWidget {
         cancelLabel: cancelLabel,
         type: type,
         onConfirm: () {
-          Navigator.of(ctx).pop(true);
+          Navigator.of(ctx, rootNavigator: true).pop(true);
           onConfirm?.call();
         },
         onCancel: () {
-          Navigator.of(ctx).pop(false);
+          Navigator.of(ctx, rootNavigator: true).pop(false);
           onCancel?.call();
         },
       ),
@@ -140,7 +141,9 @@ class ConfirmationModal extends StatelessWidget {
                     child: SizedBox(
                       height: 46,
                       child: OutlinedButton(
-                        onPressed: onCancel ?? () => Navigator.of(context).pop(false),
+                        onPressed: onCancel ??
+                            () => Navigator.of(context, rootNavigator: true)
+                                .pop(false),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFFE5E7EB)),
                           shape: RoundedRectangleBorder(
@@ -164,7 +167,9 @@ class ConfirmationModal extends StatelessWidget {
                   child: SizedBox(
                     height: 46,
                     child: ElevatedButton(
-                      onPressed: onConfirm ?? () => Navigator.of(context).pop(true),
+                      onPressed: onConfirm ??
+                          () => Navigator.of(context, rootNavigator: true)
+                              .pop(true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFF59E0B),
                         elevation: 0,

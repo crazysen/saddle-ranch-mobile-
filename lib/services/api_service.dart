@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -14,8 +16,16 @@ class ApiException implements Exception {
   final String message;
   final int? statusCode;
   final Map<String, dynamic>? errors;
+  final bool requiresEmailVerification;
+  final String? email;
 
-  ApiException(this.message, {this.statusCode, this.errors});
+  ApiException(
+    this.message, {
+    this.statusCode,
+    this.errors,
+    this.requiresEmailVerification = false,
+    this.email,
+  });
 
   @override
   String toString() => message;
@@ -23,6 +33,11 @@ class ApiException implements Exception {
 
 class ApiService {
   static const String _tokenStorageKey = 'sanctum_bearer_token';
+
+  /// Render free tier can take a long time to wake from sleep.
+  static const Duration authTimeout = Duration(seconds: 90);
+  static const Duration defaultTimeout = Duration(seconds: 45);
+
   final http.Client _client;
   final FlutterSecureStorage _storage;
 
@@ -31,6 +46,34 @@ class ApiService {
     FlutterSecureStorage? storage,
   })  : _client = client ?? http.Client(),
         _storage = storage ?? const FlutterSecureStorage();
+
+  Future<http.Response> _timedPost(
+    Uri uri, {
+    Map<String, String>? headers,
+    Object? body,
+    Duration timeout = defaultTimeout,
+  }) {
+    return _client
+        .post(uri, headers: headers, body: body)
+        .timeout(timeout);
+  }
+
+  Never _rethrowNetwork(Object error, {String action = 'request'}) {
+    if (error is TimeoutException) {
+      throw ApiException(
+        'Server is taking too long to respond (it may be waking up). Please try again in a moment.',
+      );
+    }
+    if (error is SocketException) {
+      throw ApiException(
+        'No internet connection. Check your network and try again.',
+      );
+    }
+    if (error is ApiException) {
+      throw error;
+    }
+    throw ApiException('Unable to complete $action. Please try again.');
+  }
 
   /// Retrieve stored Sanctum Bearer token
   Future<String?> getToken() async {
@@ -79,39 +122,54 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    final headers = await _buildHeaders();
-    final response = await _client.post(
-      Uri.parse(ApiConfig.login),
-      headers: headers,
-      body: jsonEncode({
-        'email': email.trim(),
-        'password': password,
-      }),
-    );
+    try {
+      final headers = await _buildHeaders();
+      final response = await _timedPost(
+        Uri.parse(ApiConfig.login),
+        headers: headers,
+        body: jsonEncode({
+          'email': email.trim(),
+          'password': password,
+        }),
+        timeout: authTimeout,
+      );
 
-    final body = _decode(response);
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final token = body['token'] ?? body['access_token'] ?? body['data']?['token'];
-      if (token != null && token.toString().isNotEmpty) {
-        await saveToken(token.toString());
+      final body = _decode(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final token = body['token'] ?? body['access_token'] ?? body['data']?['token'];
+        if (token != null && token.toString().isNotEmpty) {
+          await saveToken(token.toString());
+        }
+        return body;
       }
-      return body;
-    }
 
-    String errorMessage = body['message']?.toString() ?? 'Invalid login credentials.';
-    if (body['errors'] is Map<String, dynamic>) {
-      final errMap = body['errors'] as Map<String, dynamic>;
-      final firstKey = errMap.keys.firstOrNull;
-      if (firstKey != null && errMap[firstKey] is List && (errMap[firstKey] as List).isNotEmpty) {
-        errorMessage = (errMap[firstKey] as List).first.toString();
+      String errorMessage = body['message']?.toString() ?? 'Invalid login credentials.';
+      if (body['errors'] is Map<String, dynamic>) {
+        final errMap = body['errors'] as Map<String, dynamic>;
+        final firstKey = errMap.keys.firstOrNull;
+        if (firstKey != null && errMap[firstKey] is List && (errMap[firstKey] as List).isNotEmpty) {
+          errorMessage = (errMap[firstKey] as List).first.toString();
+        }
       }
-    }
 
-    throw ApiException(
-      errorMessage,
-      statusCode: response.statusCode,
-      errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
-    );
+      final needsVerify = body['requires_email_verification'] == true ||
+          response.statusCode == 403 &&
+              errorMessage.toLowerCase().contains('verify');
+
+      throw ApiException(
+        errorMessage,
+        statusCode: response.statusCode,
+        errors: body['errors'] is Map<String, dynamic>
+            ? body['errors'] as Map<String, dynamic>
+            : null,
+        requiresEmailVerification: needsVerify,
+        email: body['email']?.toString() ?? email.trim().toLowerCase(),
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      _rethrowNetwork(e, action: 'login');
+    }
   }
 
   /// POST /customer/register - Customer registration in database
@@ -122,38 +180,369 @@ class ApiService {
     required String passwordConfirmation,
     String? phone,
   }) async {
-    final headers = await _buildHeaders();
-    final response = await _client.post(
-      Uri.parse(ApiConfig.register),
-      headers: headers,
-      body: jsonEncode({
-        'name': name.trim(),
-        'email': email.trim(),
-        'password': password,
-        'password_confirmation': passwordConfirmation,
-        if (phone != null && phone.trim().isNotEmpty) 'phone_number': phone.trim(),
-      }),
-    );
+    try {
+      final headers = await _buildHeaders();
+      final response = await _timedPost(
+        Uri.parse(ApiConfig.register),
+        headers: headers,
+        body: jsonEncode({
+          'name': name.trim(),
+          'email': email.trim().toLowerCase(),
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+          if (phone != null && phone.trim().isNotEmpty) 'phone_number': phone.trim(),
+        }),
+        timeout: authTimeout,
+      );
 
-    final body = _decode(response);
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return body;
-    }
-
-    String errorMessage = body['message']?.toString() ?? 'Registration failed.';
-    if (body['errors'] is Map<String, dynamic>) {
-      final errMap = body['errors'] as Map<String, dynamic>;
-      final firstKey = errMap.keys.firstOrNull;
-      if (firstKey != null && errMap[firstKey] is List && (errMap[firstKey] as List).isNotEmpty) {
-        errorMessage = (errMap[firstKey] as List).first.toString();
+      final body = _decode(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        // Some backends return a Sanctum token on register.
+        final token = body['token'] ?? body['access_token'] ?? body['data']?['token'];
+        if (token != null && token.toString().isNotEmpty) {
+          await saveToken(token.toString());
+        }
+        return body;
       }
-    }
 
-    throw ApiException(
-      errorMessage,
-      statusCode: response.statusCode,
-      errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
-    );
+      String errorMessage = body['message']?.toString() ?? 'Registration failed.';
+      if (body['errors'] is Map<String, dynamic>) {
+        final errMap = body['errors'] as Map<String, dynamic>;
+        final firstKey = errMap.keys.firstOrNull;
+        if (firstKey != null && errMap[firstKey] is List && (errMap[firstKey] as List).isNotEmpty) {
+          errorMessage = (errMap[firstKey] as List).first.toString();
+        }
+      } else if (response.statusCode == 404) {
+        errorMessage = 'Register endpoint not found on server.';
+      } else if (response.statusCode >= 500) {
+        errorMessage = 'Server error while creating account. Please try again.';
+      }
+
+      throw ApiException(
+        errorMessage,
+        statusCode: response.statusCode,
+        errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      _rethrowNetwork(e, action: 'registration');
+    }
+  }
+
+  /// POST /auth/verify-email — confirm 6-digit signup code
+  Future<Map<String, dynamic>> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final headers = await _buildHeaders();
+      final response = await _timedPost(
+        Uri.parse(ApiConfig.verifyEmail),
+        headers: headers,
+        body: jsonEncode({
+          'email': email.trim().toLowerCase(),
+          'code': code.trim(),
+        }),
+        timeout: authTimeout,
+      );
+
+      final body = _decode(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final token =
+            body['token'] ?? body['access_token'] ?? body['data']?['token'];
+        if (token != null && token.toString().isNotEmpty) {
+          await saveToken(token.toString());
+        }
+        return body;
+      }
+
+      if (response.statusCode == 404) {
+        throw ApiException(
+          'Email verification is not available on the server yet. Ask your admin to deploy the verify-email API.',
+          statusCode: 404,
+        );
+      }
+
+      String errorMessage =
+          body['message']?.toString() ?? 'Could not verify email.';
+      if (body['errors'] is Map<String, dynamic>) {
+        final errMap = body['errors'] as Map<String, dynamic>;
+        final firstKey = errMap.keys.firstOrNull;
+        if (firstKey != null &&
+            errMap[firstKey] is List &&
+            (errMap[firstKey] as List).isNotEmpty) {
+          errorMessage = (errMap[firstKey] as List).first.toString();
+        }
+      }
+
+      throw ApiException(
+        errorMessage,
+        statusCode: response.statusCode,
+        errors: body['errors'] is Map<String, dynamic>
+            ? body['errors'] as Map<String, dynamic>
+            : null,
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      _rethrowNetwork(e, action: 'email verification');
+    }
+  }
+
+  /// POST /auth/resend-verification — send a new 6-digit code
+  Future<Map<String, dynamic>> resendVerification({required String email}) async {
+    try {
+      final headers = await _buildHeaders();
+      final response = await _timedPost(
+        Uri.parse(ApiConfig.resendVerification),
+        headers: headers,
+        body: jsonEncode({'email': email.trim().toLowerCase()}),
+        timeout: authTimeout,
+      );
+
+      final body = _decode(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return body;
+      }
+
+      if (response.statusCode == 404) {
+        throw ApiException(
+          'Email verification is not available on the server yet. Ask your admin to deploy the resend-verification API.',
+          statusCode: 404,
+        );
+      }
+
+      String errorMessage =
+          body['message']?.toString() ?? 'Could not resend verification code.';
+      if (body['errors'] is Map<String, dynamic>) {
+        final errMap = body['errors'] as Map<String, dynamic>;
+        final firstKey = errMap.keys.firstOrNull;
+        if (firstKey != null &&
+            errMap[firstKey] is List &&
+            (errMap[firstKey] as List).isNotEmpty) {
+          errorMessage = (errMap[firstKey] as List).first.toString();
+        }
+      }
+
+      throw ApiException(
+        errorMessage,
+        statusCode: response.statusCode,
+        errors: body['errors'] is Map<String, dynamic>
+            ? body['errors'] as Map<String, dynamic>
+            : null,
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      _rethrowNetwork(e, action: 'resend verification');
+    }
+  }
+
+  /// POST customer forgot-password — email a 6-digit reset code.
+  /// Tries common path variants used by the web backend.
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    final payload = jsonEncode({'email': email.trim().toLowerCase()});
+    final urls = [
+      ApiConfig.forgotPassword,
+      ApiConfig.forgotPasswordAlt,
+      ApiConfig.forgotPasswordAuth,
+    ];
+
+    ApiException? lastError;
+
+    try {
+      final headers = await _buildHeaders();
+      for (final url in urls) {
+        final response = await _timedPost(
+          Uri.parse(url),
+          headers: headers,
+          body: payload,
+          timeout: authTimeout,
+        );
+        final body = _decode(response);
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return body;
+        }
+
+        if (response.statusCode == 404) {
+          lastError = ApiException(
+            'Password reset is not available on the server yet.',
+            statusCode: 404,
+          );
+          continue;
+        }
+
+        String errorMessage =
+            body['message']?.toString() ?? 'Could not send password reset code.';
+        if (body['errors'] is Map<String, dynamic>) {
+          final errMap = body['errors'] as Map<String, dynamic>;
+          final firstKey = errMap.keys.firstOrNull;
+          if (firstKey != null &&
+              errMap[firstKey] is List &&
+              (errMap[firstKey] as List).isNotEmpty) {
+            errorMessage = (errMap[firstKey] as List).first.toString();
+          }
+        }
+
+        throw ApiException(
+          errorMessage,
+          statusCode: response.statusCode,
+          errors: body['errors'] is Map<String, dynamic>
+              ? body['errors'] as Map<String, dynamic>
+              : null,
+        );
+      }
+
+      throw lastError ??
+          ApiException(
+            'Password reset is not available on the server yet.',
+            statusCode: 404,
+          );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      _rethrowNetwork(e, action: 'password reset request');
+    }
+  }
+
+  /// POST customer reset-password — 6-digit code + new password.
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final cleanedCode = code.trim();
+    final payload = jsonEncode({
+      'email': email.trim().toLowerCase(),
+      'code': cleanedCode,
+      'token': cleanedCode,
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+    });
+    final urls = [
+      ApiConfig.resetPassword,
+      ApiConfig.resetPasswordAlt,
+      ApiConfig.resetPasswordAuth,
+    ];
+
+    ApiException? lastError;
+
+    try {
+      final headers = await _buildHeaders();
+      for (final url in urls) {
+        final response = await _timedPost(
+          Uri.parse(url),
+          headers: headers,
+          body: payload,
+          timeout: authTimeout,
+        );
+        final body = _decode(response);
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final token =
+              body['token'] ?? body['access_token'] ?? body['data']?['token'];
+          if (token != null && token.toString().isNotEmpty) {
+            await saveToken(token.toString());
+          }
+          return body;
+        }
+
+        if (response.statusCode == 404) {
+          lastError = ApiException(
+            'Password reset is not available on the server yet.',
+            statusCode: 404,
+          );
+          continue;
+        }
+
+        String errorMessage =
+            body['message']?.toString() ?? 'Could not reset password.';
+        if (body['errors'] is Map<String, dynamic>) {
+          final errMap = body['errors'] as Map<String, dynamic>;
+          final firstKey = errMap.keys.firstOrNull;
+          if (firstKey != null &&
+              errMap[firstKey] is List &&
+              (errMap[firstKey] as List).isNotEmpty) {
+            errorMessage = (errMap[firstKey] as List).first.toString();
+          }
+        }
+
+        throw ApiException(
+          errorMessage,
+          statusCode: response.statusCode,
+          errors: body['errors'] is Map<String, dynamic>
+              ? body['errors'] as Map<String, dynamic>
+              : null,
+        );
+      }
+
+      throw lastError ??
+          ApiException(
+            'Password reset is not available on the server yet.',
+            statusCode: 404,
+          );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      _rethrowNetwork(e, action: 'password reset');
+    }
+  }
+
+  /// POST /auth/google — exchange Google ID token for Sanctum session
+  Future<Map<String, dynamic>> loginWithGoogle({required String idToken}) async {
+    try {
+      final headers = await _buildHeaders();
+      final response = await _timedPost(
+        Uri.parse(ApiConfig.googleLogin),
+        headers: headers,
+        body: jsonEncode({'id_token': idToken}),
+        timeout: authTimeout,
+      );
+
+      final body = _decode(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final token =
+            body['token'] ?? body['access_token'] ?? body['data']?['token'];
+        if (token != null && token.toString().isNotEmpty) {
+          await saveToken(token.toString());
+        }
+        return body;
+      }
+
+      if (response.statusCode == 404) {
+        throw ApiException(
+          'Google sign-in is not available on the server yet. Ask your admin to deploy the /auth/google API.',
+          statusCode: 404,
+        );
+      }
+
+      String errorMessage =
+          body['message']?.toString() ?? 'Google sign-in failed.';
+      if (body['errors'] is Map<String, dynamic>) {
+        final errMap = body['errors'] as Map<String, dynamic>;
+        final firstKey = errMap.keys.firstOrNull;
+        if (firstKey != null &&
+            errMap[firstKey] is List &&
+            (errMap[firstKey] as List).isNotEmpty) {
+          errorMessage = (errMap[firstKey] as List).first.toString();
+        }
+      }
+
+      throw ApiException(
+        errorMessage,
+        statusCode: response.statusCode,
+        errors: body['errors'] is Map<String, dynamic>
+            ? body['errors'] as Map<String, dynamic>
+            : null,
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      _rethrowNetwork(e, action: 'Google sign-in');
+    }
   }
 
   /// GET /api/user - Fetch authenticated user profile details from database

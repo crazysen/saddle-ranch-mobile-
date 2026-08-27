@@ -6,7 +6,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../models/register_status.dart';
 import '../theme/apple_theme.dart';
+import '../widgets/google_sign_in_platform_button.dart';
+import 'forgot_password_screen.dart';
+import 'verify_email_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -99,6 +103,16 @@ class _AuthScreenState extends State<AuthScreen> {
 
     if (!mounted) return;
     if (!success) {
+      if (auth.requiresEmailVerification) {
+        final email =
+            auth.pendingVerificationEmail ?? _loginEmailController.text.trim();
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VerifyEmailScreen(email: email),
+          ),
+        );
+        return;
+      }
       final errorMsg = auth.error ?? 'Invalid login credentials';
       setState(() {
         _loginErrorMessage = errorMsg;
@@ -123,7 +137,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     final email = _signUpEmailController.text.trim();
     final auth = context.read<AuthProvider>();
-    final success = await auth.register(
+    final status = await auth.register(
       name: _signUpNameController.text.trim(),
       email: email,
       password: _signUpPasswordController.text,
@@ -132,26 +146,42 @@ class _AuthScreenState extends State<AuthScreen> {
     );
 
     if (!mounted) return;
-    if (success) {
-      _switchToLogin();
-      _loginEmailController.text = email;
-      _loginPasswordController.clear();
+
+    if (status == RegisterStatus.needsEmailVerification) {
+      _signUpPasswordController.clear();
+      _signUpConfirmPasswordController.clear();
+      final verifyEmail = auth.pendingVerificationEmail ?? email;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => VerifyEmailScreen(email: verifyEmail),
+        ),
+      );
+      return;
+    }
+
+    if (status == RegisterStatus.signedIn) {
       _signUpPasswordController.clear();
       _signUpConfirmPasswordController.clear();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account created successfully! Please log in to continue.'),
+          content: Text('Account saved! You are now signed in.'),
           backgroundColor: Color(0xFF2E7D32),
-          duration: Duration(seconds: 4),
+          duration: Duration(seconds: 3),
         ),
       );
     } else {
       final errorMsg = auth.error ?? 'Registration failed. Please try again.';
+      // If account was created but login failed, still switch to login with email filled.
+      if (errorMsg.toLowerCase().contains('auto-login failed')) {
+        _switchToLogin();
+        _loginEmailController.text = email;
+        _loginPasswordController.clear();
+      }
       setState(() {
         _signUpErrorMessage = errorMsg;
       });
-      _signUpErrorTimer = Timer(const Duration(seconds: 3), () {
+      _signUpErrorTimer = Timer(const Duration(seconds: 5), () {
         if (mounted) {
           setState(() {
             _signUpErrorMessage = null;
@@ -294,7 +324,7 @@ class _AuthScreenState extends State<AuthScreen> {
     return KeyedSubtree(
       key: const ValueKey('LoginContent'),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
         child: Form(
           key: _loginFormKey,
           child: Column(
@@ -463,6 +493,13 @@ class _AuthScreenState extends State<AuthScreen> {
                   GestureDetector(
                     onTap: () {
                       AppleTheme.hapticFeedback();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ForgotPasswordScreen(
+                            initialEmail: _loginEmailController.text.trim(),
+                          ),
+                        ),
+                      );
                     },
                     child: Text(
                       'Forgot Password?',
@@ -531,57 +568,8 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Google Button
-              SizedBox(
-                height: 50,
-                child: OutlinedButton(
-                  onPressed: auth.busy
-                      ? null
-                      : () async {
-                          AppleTheme.hapticFeedback();
-                          await context.read<AuthProvider>().signInWithGoogle();
-                        },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: _cardBorder, width: 1.2),
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/images/google_logo.png',
-                        height: 20,
-                        width: 20,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => Image.network(
-                          'https://pngimg.com/uploads/google/google_PNG19635.png',
-                          height: 20,
-                          width: 20,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) => const Icon(
-                            Icons.g_mobiledata,
-                            size: 26,
-                            color: _darkText,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Continue with Google',
-                        style: GoogleFonts.inter(
-                          color: _darkText,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // Google Button (web uses official GIS button; mobile uses custom)
+              const AppGoogleSignInButton(),
             ],
           ),
         ),

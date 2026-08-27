@@ -26,6 +26,17 @@ class ApiConfig {
     return '$baseUrl/user';
   }
   static String get logout => '$baseUrl/auth/logout';
+  static String get forgotPassword => '$baseUrl/customer/forgot-password';
+  static String get resetPassword => '$baseUrl/customer/reset-password';
+
+  /// Alternate paths used by some backend deploys
+  static String get forgotPasswordAlt => '$baseUrl/customer/forgot';
+  static String get resetPasswordAlt => '$baseUrl/customer/reset';
+  static String get forgotPasswordAuth => '$baseUrl/auth/forgot-password';
+  static String get resetPasswordAuth => '$baseUrl/auth/reset-password';
+  static String get googleLogin => '$baseUrl/auth/google';
+  static String get verifyEmail => '$baseUrl/auth/verify-email';
+  static String get resendVerification => '$baseUrl/auth/resend-verification';
 
   // 2. Menu & Banners Endpoints
   static String get products => '$baseUrl/products';

@@ -72,9 +72,10 @@ class _AccountScreenState extends State<AccountScreen> {
       type: ConfirmationType.alert,
     );
 
-    if (confirm == true && mounted) {
-      await context.read<AuthProvider>().signOut();
-    }
+    if (confirm != true || !mounted) return;
+
+    // Clear session immediately; do not block UI on Google/storage cleanup.
+    await context.read<AuthProvider>().signOut();
   }
 
   @override
@@ -140,7 +141,9 @@ class _AccountScreenState extends State<AccountScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user?.fullName.isNotEmpty == true ? user!.fullName : 'Saddle Ranch Customer',
+                        user?.fullName.isNotEmpty == true
+                            ? user!.fullName
+                            : 'Your account',
                         style: GoogleFonts.domine(
                           color: const Color(0xFF1F2937),
                           fontWeight: FontWeight.bold,
@@ -149,7 +152,9 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        user?.email ?? 'customer@saddleranch.ph',
+                        user?.email.isNotEmpty == true
+                            ? user!.email
+                            : 'No email on file',
                         style: GoogleFonts.workSans(
                           color: const Color(0xFF6B7280),
                           fontSize: 13,

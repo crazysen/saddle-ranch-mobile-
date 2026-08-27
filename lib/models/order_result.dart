@@ -93,7 +93,7 @@ class OrderResult {
   String get statusLabel {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'Order Received';
+        return 'Awaiting Kitchen';
       case 'preparing':
         return 'Sizzling on the Grill';
       case 'ready':
@@ -114,7 +114,7 @@ class OrderResult {
   String get statusDescription {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'We have received your order. Sent to the kitchen grill.';
+        return 'Your order is pending. Waiting for the kitchen to start preparing it.';
       case 'preparing':
         return 'Chef is preparing your sizzling dishes right now!';
       case 'ready':

@@ -23,6 +23,10 @@ import 'utils/menu_category.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // LOCAL DEV: import core/config/api_config.dart and set
+  // ApiConfig.overrideBaseUrl = 'http://127.0.0.1:8000/api/v1';
+
   runApp(const SaddleRanchApp());
 }
 

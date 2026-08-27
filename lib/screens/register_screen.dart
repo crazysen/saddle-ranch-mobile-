@@ -4,7 +4,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../models/register_status.dart';
 import '../theme/app_theme.dart';
+import 'verify_email_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -38,17 +40,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthProvider>();
-    final success = await auth.register(
+    final email = _emailController.text.trim();
+    final status = await auth.register(
       name: _nameController.text,
-      email: _emailController.text,
+      email: email,
       password: _passwordController.text,
       passwordConfirmation: _confirmPasswordController.text,
       phone: _phoneController.text,
     );
 
     if (!mounted) return;
-    if (success) {
-      Navigator.of(context).pop(); // Return or AuthGate will transition
+
+    if (status == RegisterStatus.needsEmailVerification) {
+      final verifyEmail = auth.pendingVerificationEmail ?? email;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => VerifyEmailScreen(email: verifyEmail),
+        ),
+      );
+      return;
+    }
+
+    if (status == RegisterStatus.signedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account saved! You are now signed in.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
     } else if (auth.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
