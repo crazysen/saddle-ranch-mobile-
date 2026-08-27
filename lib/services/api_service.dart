@@ -235,54 +235,79 @@ class ApiService {
     required String email,
     required String code,
   }) async {
+    final cleanedCode = code.trim();
+    final payload = jsonEncode({
+      'email': email.trim().toLowerCase(),
+      'code': cleanedCode,
+      'token': cleanedCode,
+      'otp': cleanedCode,
+      'verification_code': cleanedCode,
+    });
+    final urls = [
+      ApiConfig.verifyEmail,
+      ApiConfig.verifyEmailCustomer,
+      ApiConfig.verifyEmailAuth,
+      ApiConfig.verifyEmailCustomerAlt,
+      ApiConfig.verifyEmailAuthEmail,
+      ApiConfig.verifyEmailCustomerEmail,
+    ];
+
+    ApiException? lastError;
+
     try {
       final headers = await _buildHeaders();
-      final response = await _timedPost(
-        Uri.parse(ApiConfig.verifyEmail),
-        headers: headers,
-        body: jsonEncode({
-          'email': email.trim().toLowerCase(),
-          'code': code.trim(),
-        }),
-        timeout: authTimeout,
-      );
+      for (final url in urls) {
+        final response = await _timedPost(
+          Uri.parse(url),
+          headers: headers,
+          body: payload,
+          timeout: authTimeout,
+        );
 
-      final body = _decode(response);
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final token =
-            body['token'] ?? body['access_token'] ?? body['data']?['token'];
-        if (token != null && token.toString().isNotEmpty) {
-          await saveToken(token.toString());
+        final body = _decode(response);
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final token =
+              body['token'] ?? body['access_token'] ?? body['data']?['token'];
+          if (token != null && token.toString().isNotEmpty) {
+            await saveToken(token.toString());
+          }
+          return body;
         }
-        return body;
-      }
 
-      if (response.statusCode == 404) {
+        if (response.statusCode == 404) {
+          lastError = ApiException(
+            'Email verification is not available on the server yet. Ask your admin to deploy the verify-email API.',
+            statusCode: 404,
+          );
+          continue;
+        }
+
+        String errorMessage =
+            body['message']?.toString() ?? 'Could not verify email.';
+        if (body['errors'] is Map<String, dynamic>) {
+          final errMap = body['errors'] as Map<String, dynamic>;
+          final firstKey = errMap.keys.firstOrNull;
+          if (firstKey != null &&
+              errMap[firstKey] is List &&
+              (errMap[firstKey] as List).isNotEmpty) {
+            errorMessage = (errMap[firstKey] as List).first.toString();
+          }
+        }
+
         throw ApiException(
-          'Email verification is not available on the server yet. Ask your admin to deploy the verify-email API.',
-          statusCode: 404,
+          errorMessage,
+          statusCode: response.statusCode,
+          errors: body['errors'] is Map<String, dynamic>
+              ? body['errors'] as Map<String, dynamic>
+              : null,
         );
       }
 
-      String errorMessage =
-          body['message']?.toString() ?? 'Could not verify email.';
-      if (body['errors'] is Map<String, dynamic>) {
-        final errMap = body['errors'] as Map<String, dynamic>;
-        final firstKey = errMap.keys.firstOrNull;
-        if (firstKey != null &&
-            errMap[firstKey] is List &&
-            (errMap[firstKey] as List).isNotEmpty) {
-          errorMessage = (errMap[firstKey] as List).first.toString();
-        }
-      }
-
-      throw ApiException(
-        errorMessage,
-        statusCode: response.statusCode,
-        errors: body['errors'] is Map<String, dynamic>
-            ? body['errors'] as Map<String, dynamic>
-            : null,
-      );
+      throw lastError ??
+          ApiException(
+            'Email verification is not available on the server yet.',
+            statusCode: 404,
+          );
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -292,46 +317,67 @@ class ApiService {
 
   /// POST /auth/resend-verification — send a new 6-digit code
   Future<Map<String, dynamic>> resendVerification({required String email}) async {
+    final payload = jsonEncode({'email': email.trim().toLowerCase()});
+    final urls = [
+      ApiConfig.resendVerification,
+      ApiConfig.resendVerificationCustomer,
+      ApiConfig.resendVerificationAuth,
+      ApiConfig.resendVerificationCustomerAlt,
+      ApiConfig.resendVerificationAuthEmail,
+      ApiConfig.resendVerificationCustomerEmail,
+    ];
+
+    ApiException? lastError;
+
     try {
       final headers = await _buildHeaders();
-      final response = await _timedPost(
-        Uri.parse(ApiConfig.resendVerification),
-        headers: headers,
-        body: jsonEncode({'email': email.trim().toLowerCase()}),
-        timeout: authTimeout,
-      );
+      for (final url in urls) {
+        final response = await _timedPost(
+          Uri.parse(url),
+          headers: headers,
+          body: payload,
+          timeout: authTimeout,
+        );
 
-      final body = _decode(response);
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return body;
-      }
+        final body = _decode(response);
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return body;
+        }
 
-      if (response.statusCode == 404) {
+        if (response.statusCode == 404) {
+          lastError = ApiException(
+            'Email verification is not available on the server yet.',
+            statusCode: 404,
+          );
+          continue;
+        }
+
+        String errorMessage =
+            body['message']?.toString() ?? 'Could not resend verification code.';
+        if (body['errors'] is Map<String, dynamic>) {
+          final errMap = body['errors'] as Map<String, dynamic>;
+          final firstKey = errMap.keys.firstOrNull;
+          if (firstKey != null &&
+              errMap[firstKey] is List &&
+              (errMap[firstKey] as List).isNotEmpty) {
+            errorMessage = (errMap[firstKey] as List).first.toString();
+          }
+        }
+
         throw ApiException(
-          'Email verification is not available on the server yet. Ask your admin to deploy the resend-verification API.',
-          statusCode: 404,
+          errorMessage,
+          statusCode: response.statusCode,
+          errors: body['errors'] is Map<String, dynamic>
+              ? body['errors'] as Map<String, dynamic>
+              : null,
         );
       }
 
-      String errorMessage =
-          body['message']?.toString() ?? 'Could not resend verification code.';
-      if (body['errors'] is Map<String, dynamic>) {
-        final errMap = body['errors'] as Map<String, dynamic>;
-        final firstKey = errMap.keys.firstOrNull;
-        if (firstKey != null &&
-            errMap[firstKey] is List &&
-            (errMap[firstKey] as List).isNotEmpty) {
-          errorMessage = (errMap[firstKey] as List).first.toString();
-        }
-      }
-
-      throw ApiException(
-        errorMessage,
-        statusCode: response.statusCode,
-        errors: body['errors'] is Map<String, dynamic>
-            ? body['errors'] as Map<String, dynamic>
-            : null,
-      );
+      throw lastError ??
+          ApiException(
+            'Email verification is not available on the server yet.',
+            statusCode: 404,
+          );
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -347,6 +393,9 @@ class ApiService {
       ApiConfig.forgotPassword,
       ApiConfig.forgotPasswordAlt,
       ApiConfig.forgotPasswordAuth,
+      ApiConfig.forgotPasswordAuthAlt,
+      ApiConfig.forgotPasswordCustomPassword,
+      ApiConfig.forgotPasswordAuthPassword,
     ];
 
     ApiException? lastError;
@@ -419,6 +468,8 @@ class ApiService {
       'email': email.trim().toLowerCase(),
       'code': cleanedCode,
       'token': cleanedCode,
+      'otp': cleanedCode,
+      'verification_code': cleanedCode,
       'password': password,
       'password_confirmation': passwordConfirmation,
     });
@@ -426,6 +477,9 @@ class ApiService {
       ApiConfig.resetPassword,
       ApiConfig.resetPasswordAlt,
       ApiConfig.resetPasswordAuth,
+      ApiConfig.resetPasswordAuthAlt,
+      ApiConfig.resetPasswordCustomPassword,
+      ApiConfig.resetPasswordAuthPassword,
     ];
 
     ApiException? lastError;

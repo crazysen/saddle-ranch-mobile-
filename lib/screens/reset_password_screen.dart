@@ -133,21 +133,35 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Reset Password',
-                  style: GoogleFonts.domine(
-                    color: AppleColors.primaryText,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+                Center(
+                  child: Image.asset(
+                    'assets/images/saddle_ranch_logo.png',
+                    height: 72,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'Reset Password',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.domine(
+                      color: AppleColors.primaryText,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Enter the 6-digit code from your email, then choose a new password.',
-                  style: GoogleFonts.inter(
-                    color: AppleColors.mutedText,
-                    fontSize: 14,
-                    height: 1.45,
+                Center(
+                  child: Text(
+                    'Enter the 6-digit code from your email, then choose a new password.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      color: AppleColors.mutedText,
+                      fontSize: 14,
+                      height: 1.45,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -175,6 +189,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.next,
                   maxLength: 6,
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 6.0,
+                  ),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: _fieldDecoration(
                     label: 'Reset code',

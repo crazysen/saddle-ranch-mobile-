@@ -85,21 +85,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Forgot Password',
-                  style: GoogleFonts.domine(
-                    color: AppleColors.primaryText,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+                Center(
+                  child: Image.asset(
+                    'assets/images/saddle_ranch_logo.png',
+                    height: 72,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'Forgot Password',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.domine(
+                      color: AppleColors.primaryText,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Enter your account email and we\'ll send a 6-digit reset code.',
-                  style: GoogleFonts.inter(
-                    color: AppleColors.mutedText,
-                    fontSize: 14,
-                    height: 1.45,
+                Center(
+                  child: Text(
+                    'Enter your account email and we\'ll send a 6-digit reset code.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      color: AppleColors.mutedText,
+                      fontSize: 14,
+                      height: 1.45,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 28),

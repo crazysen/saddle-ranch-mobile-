@@ -100,21 +100,35 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Verify your email',
-                  style: GoogleFonts.domine(
-                    color: AppleColors.primaryText,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+                Center(
+                  child: Image.asset(
+                    'assets/images/saddle_ranch_logo.png',
+                    height: 72,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'Verify your email',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.domine(
+                      color: AppleColors.primaryText,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'We sent a 6-digit code to\n${widget.email}',
-                  style: GoogleFonts.inter(
-                    color: AppleColors.mutedText,
-                    fontSize: 14,
-                    height: 1.45,
+                Center(
+                  child: Text(
+                    'We sent a 6-digit verification code to\n${widget.email}',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      color: AppleColors.mutedText,
+                      fontSize: 14,
+                      height: 1.45,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -123,11 +137,27 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.done,
                   maxLength: 6,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 8.0,
+                    color: AppleColors.primaryText,
+                  ),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (val) {
+                    if (val.trim().length == 6 && !auth.busy) {
+                      _submit();
+                    }
+                  },
                   onFieldSubmitted: (_) => auth.busy ? null : _submit(),
                   decoration: InputDecoration(
                     labelText: 'Verification code',
-                    hintText: '6-digit code',
+                    hintText: '------',
+                    hintStyle: GoogleFonts.inter(
+                      letterSpacing: 8.0,
+                      color: AppleColors.mutedText.withValues(alpha: 0.5),
+                    ),
                     counterText: '',
                     prefixIcon: const Icon(LucideIcons.shieldCheck, size: 20),
                     filled: true,

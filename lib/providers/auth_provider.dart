@@ -211,6 +211,13 @@ class AuthProvider extends ChangeNotifier {
       AppUser user;
       if (response['user'] is Map<String, dynamic>) {
         user = AppUser.fromJson(response['user'] as Map<String, dynamic>);
+      } else if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>)['user'] is Map<String, dynamic>) {
+        user = AppUser.fromJson(
+            (response['data'] as Map<String, dynamic>)['user'] as Map<String, dynamic>);
+      } else if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>).containsKey('id')) {
+        user = AppUser.fromJson(response['data'] as Map<String, dynamic>);
       } else {
         user = await _apiService.getProfile();
       }
@@ -316,6 +323,13 @@ class AuthProvider extends ChangeNotifier {
       AppUser user;
       if (session['user'] is Map<String, dynamic>) {
         user = AppUser.fromJson(session['user'] as Map<String, dynamic>);
+      } else if (session['data'] is Map<String, dynamic> &&
+          (session['data'] as Map<String, dynamic>)['user'] is Map<String, dynamic>) {
+        user = AppUser.fromJson(
+            (session['data'] as Map<String, dynamic>)['user'] as Map<String, dynamic>);
+      } else if (session['data'] is Map<String, dynamic> &&
+          (session['data'] as Map<String, dynamic>).containsKey('id')) {
+        user = AppUser.fromJson(session['data'] as Map<String, dynamic>);
       } else if (response['user'] is Map<String, dynamic>) {
         user = AppUser.fromJson(response['user'] as Map<String, dynamic>);
       } else {

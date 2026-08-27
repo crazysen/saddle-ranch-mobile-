@@ -59,6 +59,7 @@ flutter:
   assets:
     - assets/images/frame_005.png
     - assets/images/google_logo.png
+    - assets/images/saddle_ranch_logo.png
     - assets/videos/landing-video.mp4
 
   # To add assets to your application, add an assets section, like this:

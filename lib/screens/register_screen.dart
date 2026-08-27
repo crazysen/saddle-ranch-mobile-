@@ -100,21 +100,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Create Account',
-                  style: GoogleFonts.domine(
-                    color: AppColors.primaryText,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+                Center(
+                  child: Image.asset(
+                    'assets/images/saddle_ranch_logo.png',
+                    height: 76,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'Create Account',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.domine(
+                      color: AppColors.primaryText,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Join Saddle Ranch to order sizzling favorites, save your details, and unlock rewards.',
-                  style: GoogleFonts.inter(
-                    color: AppColors.secondaryText,
-                    fontSize: 14,
-                    height: 1.4,
+                Center(
+                  child: Text(
+                    'Join Saddle Ranch to order sizzling favorites, save your details, and unlock rewards.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      color: AppColors.secondaryText,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 28),

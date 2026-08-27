@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/register_status.dart';
 import '../theme/apple_theme.dart';
-import '../widgets/google_sign_in_platform_button.dart';
 import 'forgot_password_screen.dart';
 import 'verify_email_screen.dart';
 
@@ -198,21 +197,22 @@ class _AuthScreenState extends State<AuthScreen> {
 
     final screenHeight = mediaQuery.size.height;
     final topPadding = mediaQuery.padding.top;
+    final isCompactScreen = screenHeight < 680;
 
-    // Login Sheet top position (40% from top), Sign Up sheet top position (0px - full screen)
-    final sheetTop = _isSignUp ? 0.0 : screenHeight * 0.40;
+    // Login Sheet top position: calculated responsively so Hero (logo + headline) has ample breathing room
+    final sheetTop = _isSignUp ? 0.0 : (screenHeight * 0.38).clamp(220.0, 320.0);
     final sheetRadius = _isSignUp ? 0.0 : 32.0;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // A. Background Hero Image Layer (Top 42% Viewport)
+          // A. Background Hero Image Layer
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: screenHeight * 0.45,
+            height: _isSignUp ? screenHeight * 0.45 : sheetTop + 32,
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 400),
               opacity: _isSignUp ? 0.2 : 1.0,
@@ -243,34 +243,11 @@ class _AuthScreenState extends State<AuthScreen> {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.black.withValues(alpha: 0.15),
-                            Colors.black.withValues(alpha: 0.4),
-                            Colors.black.withValues(alpha: 0.88),
+                            Colors.black.withValues(alpha: 0.45),
+                            Colors.black.withValues(alpha: 0.9),
                           ],
                           stops: const [0.0, 0.45, 1.0],
                         ),
-                      ),
-                    ),
-                  ),
-
-                  // Hero Title Headline Text (Logo removed from top-left)
-                  Positioned(
-                    left: 24,
-                    right: 24,
-                    bottom: 48,
-                    child: Text(
-                      'Log in to stay on top\nof your sizzling orders.',
-                      style: GoogleFonts.domine(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 24,
-                        color: Colors.white,
-                        height: 1.25,
-                        shadows: const [
-                          Shadow(
-                            color: Colors.black54,
-                            blurRadius: 10,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -278,6 +255,57 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             ),
           ),
+
+          // B. Hero Content (Logo at upper-left corner & responsive headline strictly above sheetTop)
+          if (!_isSignUp)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: sheetTop,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Upper-left Logo
+                      Image.asset(
+                        'assets/images/saddle_ranch_logo.png',
+                        height: isCompactScreen ? 46 : 56,
+                        fit: BoxFit.contain,
+                      ),
+                      // Responsive Headline Text (strictly above the bottom sheet)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: isCompactScreen ? 12 : 18),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Log in to stay on top\nof your sizzling orders.',
+                            style: GoogleFonts.domine(
+                              fontWeight: FontWeight.w700,
+                              fontSize: isCompactScreen ? 20 : 23,
+                              color: Colors.white,
+                              height: 1.22,
+                              shadows: const [
+                                Shadow(
+                                  color: Colors.black87,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // B. Expanding White Card Sheet (AnimatedPositioned Half-Page ↔ Full-Screen)
           AnimatedPositioned(
@@ -546,30 +574,6 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // Divider
-              Row(
-                children: [
-                  const Expanded(child: Divider(color: _cardBorder, thickness: 1)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Text(
-                      'Or Continue With',
-                      style: GoogleFonts.inter(
-                        color: _darkText,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  const Expanded(child: Divider(color: _cardBorder, thickness: 1)),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Google Button (web uses official GIS button; mobile uses custom)
-              const AppGoogleSignInButton(),
             ],
           ),
         ),
@@ -599,24 +603,40 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
-              // Title & Subtitle
-              Text(
-                'Create Account',
-                style: GoogleFonts.domine(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: _darkText,
+              // Center Middle Logo
+              Center(
+                child: Image.asset(
+                  'assets/images/saddle_ranch_logo.png',
+                  height: 76,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Title & Subtitle (Centered)
+              Center(
+                child: Text(
+                  'Create Account',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.domine(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: _darkText,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'Join Saddle Ranch to order sizzling favorites, save your details, and unlock rewards.',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: _mutedText,
-                  height: 1.4,
+              Center(
+                child: Text(
+                  'Join Saddle Ranch to order sizzling favorites, save your details, and unlock rewards.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: _mutedText,
+                    height: 1.4,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

@@ -14,6 +14,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Login'), findsAtLeast(1));
-    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.text('Remember Me'), findsOneWidget);
+    expect(find.text('Forgot Password?'), findsOneWidget);
   });
 }

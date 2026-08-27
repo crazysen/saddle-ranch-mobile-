@@ -29,14 +29,34 @@ class ApiConfig {
   static String get forgotPassword => '$baseUrl/customer/forgot-password';
   static String get resetPassword => '$baseUrl/customer/reset-password';
 
-  /// Alternate paths used by some backend deploys
+  /// Alternate paths used by different backend deploys
   static String get forgotPasswordAlt => '$baseUrl/customer/forgot';
-  static String get resetPasswordAlt => '$baseUrl/customer/reset';
   static String get forgotPasswordAuth => '$baseUrl/auth/forgot-password';
+  static String get forgotPasswordAuthAlt => '$baseUrl/auth/forgot';
+  static String get forgotPasswordCustomPassword => '$baseUrl/customer/password/forgot';
+  static String get forgotPasswordAuthPassword => '$baseUrl/auth/password/forgot';
+
+  static String get resetPasswordAlt => '$baseUrl/customer/reset';
   static String get resetPasswordAuth => '$baseUrl/auth/reset-password';
+  static String get resetPasswordAuthAlt => '$baseUrl/auth/reset';
+  static String get resetPasswordCustomPassword => '$baseUrl/customer/password/reset';
+  static String get resetPasswordAuthPassword => '$baseUrl/auth/password/reset';
+
   static String get googleLogin => '$baseUrl/auth/google';
+
   static String get verifyEmail => '$baseUrl/auth/verify-email';
+  static String get verifyEmailCustomer => '$baseUrl/customer/verify-email';
+  static String get verifyEmailAuth => '$baseUrl/auth/verify';
+  static String get verifyEmailCustomerAlt => '$baseUrl/customer/verify';
+  static String get verifyEmailAuthEmail => '$baseUrl/auth/email/verify';
+  static String get verifyEmailCustomerEmail => '$baseUrl/customer/email/verify';
+
   static String get resendVerification => '$baseUrl/auth/resend-verification';
+  static String get resendVerificationCustomer => '$baseUrl/customer/resend-verification';
+  static String get resendVerificationAuth => '$baseUrl/auth/resend';
+  static String get resendVerificationCustomerAlt => '$baseUrl/customer/resend';
+  static String get resendVerificationAuthEmail => '$baseUrl/auth/email/resend';
+  static String get resendVerificationCustomerEmail => '$baseUrl/customer/email/resend';
 
   // 2. Menu & Banners Endpoints
   static String get products => '$baseUrl/products';
