@@ -105,11 +105,23 @@ class _AuthScreenState extends State<AuthScreen> {
       if (auth.requiresEmailVerification) {
         final email =
             auth.pendingVerificationEmail ?? _loginEmailController.text.trim();
-        await Navigator.of(context).push(
+        final verified = await Navigator.of(context).push<bool>(
           MaterialPageRoute(
             builder: (_) => VerifyEmailScreen(email: email),
           ),
         );
+        if (verified == true && mounted) {
+          _switchToLogin();
+          _loginEmailController.text = email;
+          _loginPasswordController.clear();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email verified! Please enter your credentials to log in.'),
+              backgroundColor: Color(0xFF2E7D32),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
         return;
       }
       final errorMsg = auth.error ?? 'Invalid login credentials';
@@ -150,11 +162,23 @@ class _AuthScreenState extends State<AuthScreen> {
       _signUpPasswordController.clear();
       _signUpConfirmPasswordController.clear();
       final verifyEmail = auth.pendingVerificationEmail ?? email;
-      await Navigator.of(context).push(
+      final verified = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => VerifyEmailScreen(email: verifyEmail),
         ),
       );
+      if (verified == true && mounted) {
+        _switchToLogin();
+        _loginEmailController.text = verifyEmail;
+        _loginPasswordController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email verified! Please enter your credentials to log in.'),
+            backgroundColor: Color(0xFF2E7D32),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
       return;
     }
 

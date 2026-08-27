@@ -53,11 +53,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (status == RegisterStatus.needsEmailVerification) {
       final verifyEmail = auth.pendingVerificationEmail ?? email;
-      await Navigator.of(context).push(
+      final verified = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => VerifyEmailScreen(email: verifyEmail),
         ),
       );
+      if (verified == true && mounted) {
+        Navigator.of(context).pop();
+      }
       return;
     }
 

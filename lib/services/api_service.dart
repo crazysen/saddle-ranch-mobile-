@@ -266,11 +266,6 @@ class ApiService {
 
         final body = _decode(response);
         if (response.statusCode >= 200 && response.statusCode < 300) {
-          final token =
-              body['token'] ?? body['access_token'] ?? body['data']?['token'];
-          if (token != null && token.toString().isNotEmpty) {
-            await saveToken(token.toString());
-          }
           return body;
         }
 

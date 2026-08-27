@@ -206,24 +206,14 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.verifyEmail(email: email, code: code);
+      await _apiService.verifyEmail(email: email, code: code);
 
-      AppUser user;
-      if (response['user'] is Map<String, dynamic>) {
-        user = AppUser.fromJson(response['user'] as Map<String, dynamic>);
-      } else if (response['data'] is Map<String, dynamic> &&
-          (response['data'] as Map<String, dynamic>)['user'] is Map<String, dynamic>) {
-        user = AppUser.fromJson(
-            (response['data'] as Map<String, dynamic>)['user'] as Map<String, dynamic>);
-      } else if (response['data'] is Map<String, dynamic> &&
-          (response['data'] as Map<String, dynamic>).containsKey('id')) {
-        user = AppUser.fromJson(response['data'] as Map<String, dynamic>);
-      } else {
-        user = await _apiService.getProfile();
-      }
+      // Do not log in the user directly — clear any session and require login
+      try {
+        await _apiService.clearToken();
+      } catch (_) {}
 
-      _user = user;
-      await _persistLocalUserData(user);
+      _user = null;
       _pendingVerificationEmail = null;
       _requiresEmailVerification = false;
       _error = null;
