@@ -1,4 +1,4 @@
-# 🤠 Saddle Ranch Roadhouse — Mobile Application & Omnichannel System
+# Saddle Ranch Roadhouse — Mobile Application & Omnichannel System
 
 [![Flutter Version](https://img.shields.io/badge/Flutter-3.27%2B-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart Version](https://img.shields.io/badge/Dart-3.6%2B-0175C2?logo=dart&logoColor=white)](https://dart.dev)
