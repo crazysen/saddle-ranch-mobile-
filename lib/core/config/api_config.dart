@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class ApiConfig {
   /// Toggle bypassBackend to true only for offline fallback/testing.
   /// Set to false to connect directly to the live Laravel database hosted on Render.
@@ -6,12 +8,26 @@ class ApiConfig {
   /// Live Render backend base URL
   static const String defaultRenderUrl = 'https://saddle-ranch-web.onrender.com/api/v1';
 
+  /// Local development backend base URL (Laravel server)
+  static const String localBackendUrl = 'http://127.0.0.1:8000/api/v1';
+
   /// Optional override for local development or custom environment
   static String? overrideBaseUrl;
 
   static String get baseUrl {
     if (overrideBaseUrl != null && overrideBaseUrl!.isNotEmpty) {
       return overrideBaseUrl!;
+    }
+    const envUrl = String.fromEnvironment('API_URL');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
+    // Automatically connect to local Laravel server when running in browser on localhost or 127.0.0.1
+    if (kIsWeb) {
+      final host = Uri.base.host.toLowerCase();
+      if (host == 'localhost' || host == '127.0.0.1') {
+        return localBackendUrl;
+      }
     }
     return defaultRenderUrl;
   }
