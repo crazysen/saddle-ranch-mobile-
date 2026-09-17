@@ -74,4 +74,10 @@ class ApiConfig {
   // 5. Waiter Call Endpoints (QR In-House)
   static String get waiterCall => '$baseUrl/waiter-call';
   static String get waiterCallStatus => '$baseUrl/waiter-call/status';
+
+  // 6. Table session lock / unlock (staff-controlled dine-in)
+  static String tableSession(String tableNumber) =>
+      '$baseUrl/table-sessions/${Uri.encodeComponent(tableNumber)}';
+  static String get tableUnlockRequest => '$baseUrl/table-unlock-request';
+  static String get tableUnlockRequestStatus => '$baseUrl/table-unlock-request/status';
 }

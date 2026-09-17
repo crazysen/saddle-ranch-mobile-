@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/theme/app_theme.dart';
 import '../models/order_result.dart';
@@ -30,6 +31,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _submitting = false;
   String? _error;
 
+  List<String> _paymentOptions(OrderMode mode) {
+    // Match web Order page: Cash + QRPh / e-Wallets (GCash/Maya inside PayMongo)
+    if (mode == OrderMode.delivery) return ['QRPh / e-Wallets'];
+    if (mode == OrderMode.pickup) return ['Cash (Pick-Up)', 'QRPh / e-Wallets'];
+    return ['Cash', 'QRPh / e-Wallets'];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +45,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (session.tableNumber != null) {
       _tableCtrl.text = session.tableNumber!;
     }
+    final options = _paymentOptions(session.mode);
+    _payment = options.first;
   }
 
   @override
@@ -104,6 +114,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
       if (!mounted) return;
       cart.clear();
+      if (order.needsOnlinePayment) {
+        final uri = Uri.tryParse(order.checkoutUrl!);
+        if (uri != null) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      }
+      if (!mounted) return;
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
@@ -192,7 +209,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
-            children: ['Cash', 'GCash', 'Maya'].map((method) {
+            children: _paymentOptions(session.mode).map((method) {
               final selected = _payment == method;
               return ChoiceChip(
                 label: Text(method),
@@ -207,6 +224,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               );
             }).toList(),
           ),
+          if (_payment.contains('QRPh')) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Pay via GCash, Maya, QRPh, or card on PayMongo after placing the order.',
+              style: TextStyle(fontSize: 12, color: AppColors.amberSoft),
+            ),
+          ],
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(14),
@@ -276,9 +300,26 @@ class _SuccessDialog extends StatelessWidget {
           Text('Status: ${order.status}'),
           if (order.tableNumber != null) Text('Table: ${order.tableNumber}'),
           Text('Total: ${_peso.format(order.totalAmount)}'),
+          if (order.needsOnlinePayment) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Complete QRPh / e-Wallet payment in the browser that opened.',
+              style: TextStyle(fontSize: 13),
+            ),
+          ],
         ],
       ),
       actions: [
+        if (order.needsOnlinePayment && order.checkoutUrl != null)
+          TextButton(
+            onPressed: () async {
+              final uri = Uri.tryParse(order.checkoutUrl!);
+              if (uri != null) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: const Text('Open payment'),
+          ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Done'),

@@ -65,10 +65,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
     if (message != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppleColors.success,
-        ),
+        SnackBar(content: Text(message), backgroundColor: AppleColors.success),
       );
     } else if (auth.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -90,7 +87,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         backgroundColor: AppleColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: AppleColors.primaryText),
+          icon: const Icon(
+            LucideIcons.arrowLeft,
+            color: AppleColors.primaryText,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),

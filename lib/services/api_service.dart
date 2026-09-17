@@ -10,7 +10,9 @@ import '../models/app_user.dart';
 import '../models/order_result.dart';
 import '../models/product.dart';
 import '../models/promo_banner.dart';
+import '../models/table_session_status.dart';
 import '../models/voucher.dart';
+import '../utils/table_code.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -41,11 +43,9 @@ class ApiService {
   final http.Client _client;
   final FlutterSecureStorage _storage;
 
-  ApiService({
-    http.Client? client,
-    FlutterSecureStorage? storage,
-  })  : _client = client ?? http.Client(),
-        _storage = storage ?? const FlutterSecureStorage();
+  ApiService({http.Client? client, FlutterSecureStorage? storage})
+    : _client = client ?? http.Client(),
+      _storage = storage ?? const FlutterSecureStorage();
 
   Future<http.Response> _timedPost(
     Uri uri, {
@@ -53,9 +53,7 @@ class ApiService {
     Object? body,
     Duration timeout = defaultTimeout,
   }) {
-    return _client
-        .post(uri, headers: headers, body: body)
-        .timeout(timeout);
+    return _client.post(uri, headers: headers, body: body).timeout(timeout);
   }
 
   Never _rethrowNetwork(Object error, {String action = 'request'}) {
@@ -95,7 +93,9 @@ class ApiService {
   }
 
   /// Automatic headers injector appending `Authorization: Bearer <token>` and `Accept: application/json`
-  Future<Map<String, String>> _buildHeaders({Map<String, String>? extraHeaders}) async {
+  Future<Map<String, String>> _buildHeaders({
+    Map<String, String>? extraHeaders,
+  }) async {
     final token = await getToken();
     final headers = <String, String>{
       'Accept': 'application/json',
@@ -127,32 +127,34 @@ class ApiService {
       final response = await _timedPost(
         Uri.parse(ApiConfig.login),
         headers: headers,
-        body: jsonEncode({
-          'email': email.trim(),
-          'password': password,
-        }),
+        body: jsonEncode({'email': email.trim(), 'password': password}),
         timeout: authTimeout,
       );
 
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final token = body['token'] ?? body['access_token'] ?? body['data']?['token'];
+        final token =
+            body['token'] ?? body['access_token'] ?? body['data']?['token'];
         if (token != null && token.toString().isNotEmpty) {
           await saveToken(token.toString());
         }
         return body;
       }
 
-      String errorMessage = body['message']?.toString() ?? 'Invalid login credentials.';
+      String errorMessage =
+          body['message']?.toString() ?? 'Invalid login credentials.';
       if (body['errors'] is Map<String, dynamic>) {
         final errMap = body['errors'] as Map<String, dynamic>;
         final firstKey = errMap.keys.firstOrNull;
-        if (firstKey != null && errMap[firstKey] is List && (errMap[firstKey] as List).isNotEmpty) {
+        if (firstKey != null &&
+            errMap[firstKey] is List &&
+            (errMap[firstKey] as List).isNotEmpty) {
           errorMessage = (errMap[firstKey] as List).first.toString();
         }
       }
 
-      final needsVerify = body['requires_email_verification'] == true ||
+      final needsVerify =
+          body['requires_email_verification'] == true ||
           response.statusCode == 403 &&
               errorMessage.toLowerCase().contains('verify');
 
@@ -190,7 +192,8 @@ class ApiService {
           'email': email.trim().toLowerCase(),
           'password': password,
           'password_confirmation': passwordConfirmation,
-          if (phone != null && phone.trim().isNotEmpty) 'phone_number': phone.trim(),
+          if (phone != null && phone.trim().isNotEmpty)
+            'phone_number': phone.trim(),
         }),
         timeout: authTimeout,
       );
@@ -198,18 +201,22 @@ class ApiService {
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Some backends return a Sanctum token on register.
-        final token = body['token'] ?? body['access_token'] ?? body['data']?['token'];
+        final token =
+            body['token'] ?? body['access_token'] ?? body['data']?['token'];
         if (token != null && token.toString().isNotEmpty) {
           await saveToken(token.toString());
         }
         return body;
       }
 
-      String errorMessage = body['message']?.toString() ?? 'Registration failed.';
+      String errorMessage =
+          body['message']?.toString() ?? 'Registration failed.';
       if (body['errors'] is Map<String, dynamic>) {
         final errMap = body['errors'] as Map<String, dynamic>;
         final firstKey = errMap.keys.firstOrNull;
-        if (firstKey != null && errMap[firstKey] is List && (errMap[firstKey] as List).isNotEmpty) {
+        if (firstKey != null &&
+            errMap[firstKey] is List &&
+            (errMap[firstKey] as List).isNotEmpty) {
           errorMessage = (errMap[firstKey] as List).first.toString();
         }
       } else if (response.statusCode == 404) {
@@ -221,7 +228,9 @@ class ApiService {
       throw ApiException(
         errorMessage,
         statusCode: response.statusCode,
-        errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
+        errors: body['errors'] is Map<String, dynamic>
+            ? body['errors'] as Map<String, dynamic>
+            : null,
       );
     } on ApiException {
       rethrow;
@@ -244,8 +253,8 @@ class ApiService {
       'verification_code': cleanedCode,
     });
     final urls = [
-      ApiConfig.verifyEmail,
       ApiConfig.verifyEmailCustomer,
+      ApiConfig.verifyEmail,
       ApiConfig.verifyEmailAuth,
       ApiConfig.verifyEmailCustomerAlt,
       ApiConfig.verifyEmailAuthEmail,
@@ -311,11 +320,13 @@ class ApiService {
   }
 
   /// POST /auth/resend-verification — send a new 6-digit code
-  Future<Map<String, dynamic>> resendVerification({required String email}) async {
+  Future<Map<String, dynamic>> resendVerification({
+    required String email,
+  }) async {
     final payload = jsonEncode({'email': email.trim().toLowerCase()});
     final urls = [
-      ApiConfig.resendVerification,
       ApiConfig.resendVerificationCustomer,
+      ApiConfig.resendVerification,
       ApiConfig.resendVerificationAuth,
       ApiConfig.resendVerificationCustomerAlt,
       ApiConfig.resendVerificationAuthEmail,
@@ -348,7 +359,8 @@ class ApiService {
         }
 
         String errorMessage =
-            body['message']?.toString() ?? 'Could not resend verification code.';
+            body['message']?.toString() ??
+            'Could not resend verification code.';
         if (body['errors'] is Map<String, dynamic>) {
           final errMap = body['errors'] as Map<String, dynamic>;
           final firstKey = errMap.keys.firstOrNull;
@@ -419,7 +431,8 @@ class ApiService {
         }
 
         String errorMessage =
-            body['message']?.toString() ?? 'Could not send password reset code.';
+            body['message']?.toString() ??
+            'Could not send password reset code.';
         if (body['errors'] is Map<String, dynamic>) {
           final errMap = body['errors'] as Map<String, dynamic>;
           final firstKey = errMap.keys.firstOrNull;
@@ -541,7 +554,9 @@ class ApiService {
   }
 
   /// POST /auth/google — exchange Google ID token for Sanctum session
-  Future<Map<String, dynamic>> loginWithGoogle({required String idToken}) async {
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+  }) async {
     try {
       final headers = await _buildHeaders();
       final response = await _timedPost(
@@ -604,7 +619,8 @@ class ApiService {
 
     final body = _decode(response);
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final userData = (body['user'] ?? body['data'] ?? body) as Map<String, dynamic>;
+      final userData =
+          (body['user'] ?? body['data'] ?? body) as Map<String, dynamic>;
       return AppUser.fromJson(userData);
     }
 
@@ -615,7 +631,9 @@ class ApiService {
         headers: headers,
       );
       final fbBody = _decode(fallbackResp);
-      if (fallbackResp.statusCode >= 200 && fallbackResp.statusCode < 300 && fbBody['user'] != null) {
+      if (fallbackResp.statusCode >= 200 &&
+          fallbackResp.statusCode < 300 &&
+          fbBody['user'] != null) {
         return AppUser.fromJson(fbBody['user'] as Map<String, dynamic>);
       }
     } catch (_) {}
@@ -630,10 +648,7 @@ class ApiService {
   Future<void> logout() async {
     try {
       final headers = await _buildHeaders();
-      await _client.post(
-        Uri.parse(ApiConfig.logout),
-        headers: headers,
-      );
+      await _client.post(Uri.parse(ApiConfig.logout), headers: headers);
     } catch (_) {
       // Ignore API errors during logout
     } finally {
@@ -738,7 +753,9 @@ class ApiService {
 
     // Fallback: Validate directly against live database vouchers list
     final allVouchers = await fetchCustomerVouchers();
-    final match = allVouchers.where((v) => v.code.toUpperCase() == cleanCode).firstOrNull;
+    final match = allVouchers
+        .where((v) => v.code.toUpperCase() == cleanCode)
+        .firstOrNull;
     if (match == null) {
       throw ApiException('Invalid promo coupon code.');
     }
@@ -746,11 +763,15 @@ class ApiService {
     if (match.branch != 'all' &&
         !match.branch.toLowerCase().contains(branchKey) &&
         !branchKey.contains(match.branch.toLowerCase())) {
-      throw ApiException('This voucher is only valid for ${match.branch.toUpperCase()} branch.');
+      throw ApiException(
+        'This voucher is only valid for ${match.branch.toUpperCase()} branch.',
+      );
     }
 
     if (subtotal < match.minSpend) {
-      throw ApiException('Minimum spend of ₱${match.minSpend.toStringAsFixed(0)} is required for this voucher.');
+      throw ApiException(
+        'Minimum spend of ₱${match.minSpend.toStringAsFixed(0)} is required for this voucher.',
+      );
     }
 
     return {
@@ -780,8 +801,11 @@ class ApiService {
 
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final list = (body['data'] ?? body['vouchers'] ?? body) as List<dynamic>? ?? [];
-        return list.map((v) => Voucher.fromJson(v as Map<String, dynamic>)).toList();
+        final list =
+            (body['data'] ?? body['vouchers'] ?? body) as List<dynamic>? ?? [];
+        return list
+            .map((v) => Voucher.fromJson(v as Map<String, dynamic>))
+            .toList();
       }
       return [];
     } catch (_) {
@@ -818,25 +842,42 @@ class ApiService {
         'branch': branch,
         'payment_method': paymentMethod,
         'items': items,
-        if (tableNumber != null && tableNumber.isNotEmpty) 'table_number': tableNumber,
-        if (customerName != null && customerName.isNotEmpty) 'customer_name': customerName,
-        if (customerPhone != null && customerPhone.isNotEmpty) 'customer_phone': customerPhone,
-        if (deliveryAddress != null && deliveryAddress.isNotEmpty) 'delivery_address': deliveryAddress,
-        if (deliveryNotes != null && deliveryNotes.isNotEmpty) 'delivery_notes': deliveryNotes,
-        if (voucherCode != null && voucherCode.isNotEmpty) 'voucher_code': voucherCode,
-        if (discountAmount != null && discountAmount > 0) 'discount_amount': discountAmount,
+        if (tableNumber != null && tableNumber.isNotEmpty)
+          'table_number': tableNumber,
+        if (customerName != null && customerName.isNotEmpty)
+          'customer_name': customerName,
+        if (customerPhone != null && customerPhone.isNotEmpty)
+          'customer_phone': customerPhone,
+        if (deliveryAddress != null && deliveryAddress.isNotEmpty)
+          'delivery_address': deliveryAddress,
+        if (deliveryNotes != null && deliveryNotes.isNotEmpty)
+          'delivery_notes': deliveryNotes,
+        if (voucherCode != null && voucherCode.isNotEmpty)
+          'voucher_code': voucherCode,
+        if (discountAmount != null && discountAmount > 0)
+          'discount_amount': discountAmount,
       }),
     );
 
     final body = _decode(response);
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = body['data'] as Map<String, dynamic>? ?? body;
+      final data = Map<String, dynamic>.from(
+        body['data'] as Map<String, dynamic>? ?? body,
+      );
+      // Prefer top-level checkout_url if API nests it outside data
+      final checkoutUrl =
+          body['checkout_url'] as String? ?? data['checkout_url'] as String?;
+      if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
+        data['checkout_url'] = checkoutUrl;
+      }
       final order = OrderResult.fromJson(data);
       // Ensure created_at is present for real-time tracking
       final completeOrder = order.createdAt == null || order.createdAt!.isEmpty
           ? order.copyWith(createdAt: DateTime.now().toUtc().toIso8601String())
           : order;
-      _localPlacedOrders.removeWhere((o) => o.orderNumber == completeOrder.orderNumber);
+      _localPlacedOrders.removeWhere(
+        (o) => o.orderNumber == completeOrder.orderNumber,
+      );
       _localPlacedOrders.insert(0, completeOrder);
       return completeOrder;
     }
@@ -844,36 +885,50 @@ class ApiService {
     throw ApiException(
       body['message']?.toString() ?? 'Failed to place order in database.',
       statusCode: response.statusCode,
-      errors: body['errors'] is Map<String, dynamic> ? body['errors'] as Map<String, dynamic> : null,
+      errors: body['errors'] is Map<String, dynamic>
+          ? body['errors'] as Map<String, dynamic>
+          : null,
     );
   }
 
   /// GET /orders/track?query=... - Track active orders directly from live database (Web Admin/POS/KDS state)
-  Future<List<OrderResult>> trackOrders({String? query, bool all = false}) async {
+  Future<List<OrderResult>> trackOrders({
+    String? query,
+    bool all = false,
+  }) async {
     final results = <OrderResult>[];
     try {
       final headers = await _buildHeaders();
 
       // If no query is provided, query all or include placed order numbers
       String? effectiveQuery = query;
-      if ((effectiveQuery == null || effectiveQuery.isEmpty) && !all && _localPlacedOrders.isNotEmpty) {
+      if ((effectiveQuery == null || effectiveQuery.isEmpty) &&
+          !all &&
+          _localPlacedOrders.isNotEmpty) {
         effectiveQuery = _localPlacedOrders.map((o) => o.orderNumber).join(',');
       }
 
       final uri = Uri.parse(ApiConfig.trackOrders).replace(
         queryParameters: {
-          if (effectiveQuery != null && effectiveQuery.isNotEmpty) 'query': effectiveQuery,
-          if (all || effectiveQuery == null || effectiveQuery.isEmpty) 'all': '1',
+          if (effectiveQuery != null && effectiveQuery.isNotEmpty)
+            'query': effectiveQuery,
+          if (all || effectiveQuery == null || effectiveQuery.isEmpty)
+            'all': '1',
         },
       );
 
       final response = await _client.get(uri, headers: headers);
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
-        final fetched = list.map((o) => OrderResult.fromJson(o as Map<String, dynamic>)).toList();
+        final list =
+            (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
+        final fetched = list
+            .map((o) => OrderResult.fromJson(o as Map<String, dynamic>))
+            .toList();
         for (final order in fetched) {
-          final existingIdx = results.indexWhere((r) => r.orderNumber == order.orderNumber);
+          final existingIdx = results.indexWhere(
+            (r) => r.orderNumber == order.orderNumber,
+          );
           if (existingIdx >= 0) {
             results[existingIdx] = order;
           } else {
@@ -883,7 +938,9 @@ class ApiService {
 
         // Update local cache with live database statuses from Web Admin / KDS / Cashier
         for (final item in fetched) {
-          final idx = _localPlacedOrders.indexWhere((o) => o.orderNumber == item.orderNumber);
+          final idx = _localPlacedOrders.indexWhere(
+            (o) => o.orderNumber == item.orderNumber,
+          );
           if (idx >= 0) {
             _localPlacedOrders[idx] = item;
           }
@@ -897,7 +954,8 @@ class ApiService {
         if (query == null ||
             query.isEmpty ||
             local.orderNumber.toLowerCase().contains(query.toLowerCase()) ||
-            (local.customerPhone != null && local.customerPhone!.contains(query))) {
+            (local.customerPhone != null &&
+                local.customerPhone!.contains(query))) {
           results.add(local);
         }
       }
@@ -927,8 +985,11 @@ class ApiService {
 
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final list = (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
-        return list.map((o) => OrderResult.fromJson(o as Map<String, dynamic>)).toList();
+        final list =
+            (body['data'] ?? body['orders'] ?? body) as List<dynamic>? ?? [];
+        return list
+            .map((o) => OrderResult.fromJson(o as Map<String, dynamic>))
+            .toList();
       }
       return [];
     } catch (_) {
@@ -941,15 +1002,15 @@ class ApiService {
   // ==========================================
 
   /// POST /waiter-call - Buzz for assistance in live database/cache
-  Future<void> callWaiter({required String tableNumber, String branch = 'Bulihan'}) async {
+  Future<void> callWaiter({
+    required String tableNumber,
+    String branch = 'Bulihan',
+  }) async {
     final headers = await _buildHeaders();
     final response = await _client.post(
       Uri.parse(ApiConfig.waiterCall),
       headers: headers,
-      body: jsonEncode({
-        'table_number': tableNumber,
-        'branch': branch,
-      }),
+      body: jsonEncode({'table_number': tableNumber, 'branch': branch}),
     );
 
     final body = _decode(response);
@@ -963,18 +1024,137 @@ class ApiService {
     );
   }
 
+  /// POST /orders/{orderNumber}/confirm-payment
+  Future<void> confirmPayment({required String orderNumber}) async {
+    final headers = await _buildHeaders();
+    final response = await _client.post(
+      Uri.parse('${ApiConfig.orders}/$orderNumber/confirm-payment'),
+      headers: headers,
+      body: jsonEncode({}),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+    throw ApiException(
+      body['message']?.toString() ?? 'Unable to confirm payment.',
+      statusCode: response.statusCode,
+    );
+  }
+
   /// GET /waiter-call/status?table_number=... - Poll waiter buzzer status from database
   Future<String> getWaiterCallStatus({required String tableNumber}) async {
     try {
       final headers = await _buildHeaders();
-      final uri = Uri.parse(ApiConfig.waiterCallStatus).replace(
-        queryParameters: {'table_number': tableNumber},
-      );
+      final uri = Uri.parse(
+        ApiConfig.waiterCallStatus,
+      ).replace(queryParameters: {'table_number': tableNumber});
       final response = await _client.get(uri, headers: headers);
       final body = _decode(response);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = body['data'] as Map<String, dynamic>? ?? body;
         return (data['status'] ?? 'idle').toString();
+      }
+      return 'idle';
+    } catch (_) {
+      return 'idle';
+    }
+  }
+
+  // ==========================================
+  // 6. TABLE SESSION LOCK / UNLOCK
+  // ==========================================
+
+  /// GET /table-sessions/{table}?branch=...
+  /// Tries QR aliases (B-08 / 08) and correct branch so staff unlock syncs.
+  Future<TableSessionStatus> fetchTableSession({
+    required String tableNumber,
+    String branch = 'Bulihan',
+  }) async {
+    final candidates = TableCode.lookupCandidates(tableNumber);
+    final branchHint = TableCode.branchFromCode(tableNumber);
+    final branches = <String>{
+      if (branchHint != null) branchHint,
+      branch,
+      'Bulihan',
+      'Dasma',
+    }.toList();
+
+    TableSessionStatus? best;
+    try {
+      final headers = await _buildHeaders();
+      for (final b in branches) {
+        for (final code in candidates) {
+          final uri = Uri.parse(
+            ApiConfig.tableSession(code),
+          ).replace(queryParameters: {'branch': b});
+          final response = await _client.get(uri, headers: headers);
+          if (response.statusCode < 200 || response.statusCode >= 300) continue;
+          final body = _decode(response);
+          final data = body['data'] as Map<String, dynamic>? ?? body;
+          final status = TableSessionStatus.fromJson(data);
+          if (!status.isLocked) {
+            return status;
+          }
+          best ??= status;
+        }
+      }
+      return best ??
+          TableSessionStatus.lockedFallback(
+            tableNumber,
+            branch: branchHint ?? branch,
+          );
+    } catch (_) {
+      return TableSessionStatus.lockedFallback(
+        tableNumber,
+        branch: branchHint ?? branch,
+      );
+    }
+  }
+
+  /// POST /table-unlock-request — notifies staff on POS
+  Future<void> requestTableUnlock({
+    required String tableNumber,
+    String branch = 'Bulihan',
+  }) async {
+    final headers = await _buildHeaders();
+    // Staff POS grid uses digit tables (08); also send QR code form.
+    final dig = TableCode.digits(tableNumber);
+    final branchKey = TableCode.branchFromCode(tableNumber) ?? branch;
+    final response = await _client.post(
+      Uri.parse(ApiConfig.tableUnlockRequest),
+      headers: headers,
+      body: jsonEncode({'table_number': dig, 'branch': branchKey}),
+    );
+
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+
+    throw ApiException(
+      body['message']?.toString() ?? 'Unable to request table unlock.',
+      statusCode: response.statusCode,
+    );
+  }
+
+  /// GET /table-unlock-request/status?table_number=...
+  Future<String> getTableUnlockRequestStatus({
+    required String tableNumber,
+  }) async {
+    try {
+      final headers = await _buildHeaders();
+      for (final code in TableCode.lookupCandidates(tableNumber)) {
+        final uri = Uri.parse(
+          ApiConfig.tableUnlockRequestStatus,
+        ).replace(queryParameters: {'table_number': code});
+        final response = await _client.get(uri, headers: headers);
+        final body = _decode(response);
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final data = body['data'] as Map<String, dynamic>? ?? body;
+          final status = (data['status'] ?? 'idle').toString().toLowerCase();
+          if (status == 'unlocked' || status == 'pending') return status;
+        }
       }
       return 'idle';
     } catch (_) {

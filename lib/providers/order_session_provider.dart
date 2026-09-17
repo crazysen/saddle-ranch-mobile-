@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../services/api_service.dart';
+import '../utils/table_code.dart';
 
 enum OrderMode { dineIn, pickup, delivery, expressTakeout }
 
@@ -44,6 +46,8 @@ class OrderSessionProvider extends ChangeNotifier {
   String _branch = 'Bulihan'; // 'Bulihan' or 'Dasma'
   String? _tableNumber;
   bool _tableLocked = false;
+  /// Staff-opened dine-in session (table_sessions.is_active). False = preview only.
+  bool _staffSessionActive = true;
   String _deliveryAddressTitle = 'Saddle Ranch Bulihan Main';
   String _deliveryAddressSubtitle = 'Aguinaldo Highway, Bulihan, Silang, Cavite';
   bool _isBulihanAddress = true;
@@ -51,11 +55,16 @@ class OrderSessionProvider extends ChangeNotifier {
   // Waiter buzzer state
   String _waiterCallStatus = 'idle'; // 'idle' | 'pending' | 'acknowledged'
   bool _isCallingWaiter = false;
+  Timer? _staffSessionPollTimer;
 
   OrderMode get mode => _mode;
   String get branch => _branch;
   String? get tableNumber => _tableNumber;
   bool get tableLocked => _tableLocked;
+  bool get staffSessionActive => _staffSessionActive;
+  /// Dine-in orders only after staff unlocks the table session.
+  bool get canPlaceDineInOrder =>
+      !isDineIn || _staffSessionActive;
   String get waiterCallStatus => _waiterCallStatus;
   bool get isCallingWaiter => _isCallingWaiter;
   String get deliveryAddressTitle => _deliveryAddressTitle;
@@ -63,6 +72,12 @@ class OrderSessionProvider extends ChangeNotifier {
   bool get isBulihanAddress => _isBulihanAddress;
 
   bool get isDineIn => (_mode == OrderMode.dineIn || _mode == OrderMode.expressTakeout) && (_tableNumber?.isNotEmpty ?? false);
+
+  @override
+  void dispose() {
+    _staffSessionPollTimer?.cancel();
+    super.dispose();
+  }
 
   void updateLocation({
     required String title,
@@ -160,12 +175,72 @@ class OrderSessionProvider extends ChangeNotifier {
   }
 
   /// Called when guest scans table QR or opens deep link `/dine-in?table=05`.
-  void startDineInFromTable(String table, {OrderMode fulfillment = OrderMode.dineIn}) {
-    final normalized = table.trim().padLeft(2, '0');
+  void startDineInFromTable(
+    String table, {
+    OrderMode fulfillment = OrderMode.dineIn,
+    bool staffSessionActive = true,
+  }) {
+    final tableId = TableCode.normalize(table);
+    final qrBranch = TableCode.branchFromCode(table);
+    if (qrBranch != null) {
+      _branch = qrBranch;
+    }
     _mode = fulfillment;
-    _tableNumber = normalized;
+    _tableNumber = tableId;
     _tableLocked = true;
+    _staffSessionActive = staffSessionActive;
+    if (!staffSessionActive) {
+      _ensureStaffSessionPolling();
+    } else {
+      _staffSessionPollTimer?.cancel();
+      _staffSessionPollTimer = null;
+    }
     notifyListeners();
+  }
+
+  void setStaffSessionActive(bool active) {
+    if (_staffSessionActive == active) return;
+    _staffSessionActive = active;
+    if (active) {
+      _staffSessionPollTimer?.cancel();
+      _staffSessionPollTimer = null;
+    } else {
+      _ensureStaffSessionPolling();
+    }
+    notifyListeners();
+  }
+
+  void _ensureStaffSessionPolling() {
+    _staffSessionPollTimer?.cancel();
+    if (!isDineIn || _staffSessionActive) return;
+    _staffSessionPollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      refreshStaffSession();
+    });
+  }
+
+  /// Re-check live table_sessions on the server (staff unlock sync).
+  Future<bool> refreshStaffSession() async {
+    if (!isDineIn || _tableNumber == null || _tableNumber!.isEmpty) {
+      return true;
+    }
+    try {
+      final session = await _api.fetchTableSession(
+        tableNumber: _tableNumber!,
+        branch: TableCode.branchFromCode(_tableNumber!) ?? _branch,
+      );
+      final active = !session.isLocked;
+      if (_staffSessionActive != active) {
+        _staffSessionActive = active;
+        if (active) {
+          _staffSessionPollTimer?.cancel();
+          _staffSessionPollTimer = null;
+        }
+        notifyListeners();
+      }
+      return active;
+    } catch (_) {
+      return _staffSessionActive;
+    }
   }
 
   void setTableNumber(String? table) {
@@ -212,10 +287,13 @@ class OrderSessionProvider extends ChangeNotifier {
   }
 
   void reset() {
+    _staffSessionPollTimer?.cancel();
+    _staffSessionPollTimer = null;
     _mode = OrderMode.pickup;
     _branch = 'Bulihan';
     _tableNumber = null;
     _tableLocked = false;
+    _staffSessionActive = true;
     _waiterCallStatus = 'idle';
     notifyListeners();
   }

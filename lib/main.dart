@@ -20,6 +20,8 @@ import 'screens/orders_screen.dart';
 import 'theme/apple_theme.dart';
 import 'utils/deep_link_parser.dart';
 import 'utils/menu_category.dart';
+import 'utils/table_code.dart';
+import 'widgets/table_locked_modal.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,20 +90,42 @@ class _MainShellState extends State<MainShell> {
     _linkSub = _appLinks.uriLinkStream.listen(_handleUri);
   }
 
-  void _handleUri(Uri uri) {
+  Future<void> _handleUri(Uri uri) async {
     if (!mounted) return;
     if (!isDineInLink(uri) && extractTableFromUri(uri) == null) return;
 
     final table = extractTableFromUri(uri);
     if (table == null) return;
 
-    context.read<OrderSessionProvider>().startDineInFromTable(table);
-    setState(() => _index = 1);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Welcome to Table ${table.padLeft(2, '0')}'),
-      ),
+    final session = context.read<OrderSessionProvider>();
+    session.startDineInFromTable(table, staffSessionActive: false);
+
+    final gate = await TableLockedModal.showIfLocked(
+      context,
+      tableNumber: table,
+      branch: session.branch,
     );
+    if (!mounted) return;
+
+    if (gate == TableLockGateResult.unlocked) {
+      session.setStaffSessionActive(true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Welcome to Table ${TableCode.normalize(table)}')),
+      );
+      _openMenu();
+      return;
+    }
+
+    if (gate == TableLockGateResult.previewMenu) {
+      session.setStaffSessionActive(false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preview only — request unlock to place an order.'),
+          backgroundColor: Color(0xFFF59E0B),
+        ),
+      );
+      _openMenu();
+    }
   }
 
   void _openMenu({MenuCategory? category}) {

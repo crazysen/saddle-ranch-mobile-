@@ -8,6 +8,7 @@ import '../core/theme/app_theme.dart';
 import '../providers/order_session_provider.dart';
 import '../theme/apple_theme.dart';
 import '../utils/deep_link_parser.dart';
+import '../utils/table_code.dart';
 
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
@@ -29,7 +30,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   void _applyTable(String table) {
     if (_handled || !mounted) return;
     _handled = true;
-    final normalized = table.padLeft(2, '0');
+    final normalized = TableCode.normalize(table);
 
     showModalBottomSheet(
       context: context,

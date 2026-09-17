@@ -12,7 +12,7 @@ extension MenuCategoryX on MenuCategory {
   String get label {
     switch (this) {
       case MenuCategory.all:
-        return 'All';
+        return 'Popular';
       case MenuCategory.sizzling:
         return 'Rice Meals';
       case MenuCategory.filipino:
@@ -20,14 +20,14 @@ extension MenuCategoryX on MenuCategory {
       case MenuCategory.barkada:
         return 'Barkada Platters';
       case MenuCategory.drinks:
-        return 'Drinks and Extra Rice';
+        return 'Drinks & Extra Rice';
     }
   }
 
   String get subtitle {
     switch (this) {
       case MenuCategory.all:
-        return 'Full menu';
+        return 'Popular picks';
       case MenuCategory.sizzling:
         return 'Sizzling Rice Meals';
       case MenuCategory.filipino:
@@ -35,7 +35,7 @@ extension MenuCategoryX on MenuCategory {
       case MenuCategory.barkada:
         return 'Barkada Platters';
       case MenuCategory.drinks:
-        return 'Drinks and Extra Rice';
+        return 'Drinks & Extra Rice';
     }
   }
 

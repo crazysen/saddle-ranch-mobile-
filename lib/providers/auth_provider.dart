@@ -17,7 +17,8 @@ class AuthProvider extends ChangeNotifier {
 
   final ApiService _apiService;
 
-  AuthProvider({ApiService? apiService}) : _apiService = apiService ?? ApiService();
+  AuthProvider({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
 
   AppUser? _user;
   bool _loading = true;
@@ -98,15 +99,22 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.login(email: email, password: password);
-      
+      final response = await _apiService.login(
+        email: email,
+        password: password,
+      );
+
       // Extract user from API response or fetch profile
       AppUser user;
       if (response['user'] is Map<String, dynamic>) {
         user = AppUser.fromJson(response['user'] as Map<String, dynamic>);
       } else if (response['data'] is Map<String, dynamic> &&
-          (response['data'] as Map<String, dynamic>)['user'] is Map<String, dynamic>) {
-        user = AppUser.fromJson((response['data'] as Map<String, dynamic>)['user'] as Map<String, dynamic>);
+          (response['data'] as Map<String, dynamic>)['user']
+              is Map<String, dynamic>) {
+        user = AppUser.fromJson(
+          (response['data'] as Map<String, dynamic>)['user']
+              as Map<String, dynamic>,
+        );
       } else {
         user = await _apiService.getProfile();
       }
@@ -119,8 +127,7 @@ class AuthProvider extends ChangeNotifier {
       _error = e.message;
       if (e.requiresEmailVerification) {
         _requiresEmailVerification = true;
-        _pendingVerificationEmail =
-            e.email ?? email.trim().toLowerCase();
+        _pendingVerificationEmail = e.email ?? email.trim().toLowerCase();
       }
       return false;
     } catch (e) {
@@ -171,7 +178,9 @@ class AuthProvider extends ChangeNotifier {
       // If the old register endpoint didn't email a code, try resend (once deployed).
       if (regResponse['requires_email_verification'] != true) {
         try {
-          await _apiService.resendVerification(email: _pendingVerificationEmail!);
+          await _apiService.resendVerification(
+            email: _pendingVerificationEmail!,
+          );
         } catch (_) {
           // Verify / resend may not be on Render yet — UI still shows the code screen.
         }
@@ -188,7 +197,8 @@ class AuthProvider extends ChangeNotifier {
       _error = e.message;
       return RegisterStatus.failed;
     } catch (e) {
-      _error = 'Registration failed. Please check your connection and try again.';
+      _error =
+          'Registration failed. Please check your connection and try again.';
       return RegisterStatus.failed;
     } finally {
       _busy = false;
@@ -238,7 +248,8 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final response = await _apiService.resendVerification(email: email);
-      final message = response['message']?.toString() ??
+      final message =
+          response['message']?.toString() ??
           'A new verification code has been sent.';
       _error = null;
       return message;
@@ -263,7 +274,8 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final response = await _apiService.forgotPassword(email: email);
-      final message = response['message']?.toString() ??
+      final message =
+          response['message']?.toString() ??
           'If that email is registered, a 6-digit reset code has been sent.';
       _error = null;
       return message;
@@ -301,7 +313,9 @@ class AuthProvider extends ChangeNotifier {
 
       Map<String, dynamic> session = response;
       final token =
-          response['token'] ?? response['access_token'] ?? response['data']?['token'];
+          response['token'] ??
+          response['access_token'] ??
+          response['data']?['token'];
 
       if (token == null || token.toString().isEmpty) {
         session = await _apiService.login(
@@ -314,9 +328,12 @@ class AuthProvider extends ChangeNotifier {
       if (session['user'] is Map<String, dynamic>) {
         user = AppUser.fromJson(session['user'] as Map<String, dynamic>);
       } else if (session['data'] is Map<String, dynamic> &&
-          (session['data'] as Map<String, dynamic>)['user'] is Map<String, dynamic>) {
+          (session['data'] as Map<String, dynamic>)['user']
+              is Map<String, dynamic>) {
         user = AppUser.fromJson(
-            (session['data'] as Map<String, dynamic>)['user'] as Map<String, dynamic>);
+          (session['data'] as Map<String, dynamic>)['user']
+              as Map<String, dynamic>,
+        );
       } else if (session['data'] is Map<String, dynamic> &&
           (session['data'] as Map<String, dynamic>).containsKey('id')) {
         user = AppUser.fromJson(session['data'] as Map<String, dynamic>);
@@ -405,7 +422,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Used by web GIS `renderButton` via authenticationEvents.
-  Future<bool> completeGoogleSignInFromAccount(GoogleSignInAccount account) async {
+  Future<bool> completeGoogleSignInFromAccount(
+    GoogleSignInAccount account,
+  ) async {
     _busy = true;
     _error = null;
     notifyListeners();
@@ -527,9 +546,9 @@ class AuthProvider extends ChangeNotifier {
     await Future.wait<void>([
       () async {
         try {
-          await GoogleSignIn.instance
-              .signOut()
-              .timeout(const Duration(seconds: 2));
+          await GoogleSignIn.instance.signOut().timeout(
+            const Duration(seconds: 2),
+          );
         } catch (_) {}
       }(),
       () async {
@@ -539,8 +558,9 @@ class AuthProvider extends ChangeNotifier {
       }(),
       () async {
         try {
-          final prefs = await SharedPreferences.getInstance()
-              .timeout(const Duration(seconds: 2));
+          final prefs = await SharedPreferences.getInstance().timeout(
+            const Duration(seconds: 2),
+          );
           await Future.wait([
             prefs.remove(_keyLoggedIn),
             prefs.remove(_keyEmail),

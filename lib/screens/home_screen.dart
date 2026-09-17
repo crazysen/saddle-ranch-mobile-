@@ -14,8 +14,10 @@ import '../providers/cart_provider.dart';
 import '../providers/menu_provider.dart';
 import '../providers/order_session_provider.dart';
 import '../utils/menu_category.dart';
+import '../utils/table_code.dart';
 import '../widgets/banner_carousel.dart';
 import '../widgets/confirmation_modal.dart';
+import '../widgets/table_locked_modal.dart';
 import 'qr_scanner_screen.dart';
 
 import '../models/order_result.dart';
@@ -83,6 +85,42 @@ class _HomeScreenState extends State<HomeScreen> {
     final menu = context.read<MenuProvider>();
     await session.autoDetectBranch();
     menu.setBranch(session.branch);
+  }
+
+  /// After QR scan: if staff has not opened the table, show lock modal (notifies POS).
+  Future<void> _handleTableScanResult(String? table) async {
+    if (!mounted || table == null || table.isEmpty) return;
+    final session = context.read<OrderSessionProvider>();
+    // Lock QR branch to the table code (B- = Bulihan, D- = Dasma) before status check
+    session.startDineInFromTable(table, staffSessionActive: false);
+    final gate = await TableLockedModal.showIfLocked(
+      context,
+      tableNumber: table,
+      branch: session.branch,
+    );
+    if (!mounted) return;
+
+    if (gate == TableLockGateResult.unlocked) {
+      session.setStaffSessionActive(true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Table #${TableCode.normalize(table)} unlocked — you can order now.'),
+          backgroundColor: const Color(0xFFF59E0B),
+        ),
+      );
+      widget.onOpenMenu();
+      return;
+    }
+    if (gate == TableLockGateResult.previewMenu) {
+      session.setStaffSessionActive(false);
+      widget.onOpenMenu();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preview only — request unlock to place an order.'),
+          backgroundColor: Color(0xFFF59E0B),
+        ),
+      );
+    }
   }
 
   Future<void> _loadVouchers() async {
@@ -588,12 +626,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 subtitle: 'Order from your table or scan QR code',
                 icon: LucideIcons.qrCode,
                 selected: session.mode == OrderMode.dineIn,
-                onTap: () {
+                onTap: () async {
                   session.setMode(OrderMode.dineIn);
                   Navigator.pop(ctx);
-                  Navigator.of(context).push(
+                  final table = await Navigator.of(context).push<String>(
                     MaterialPageRoute(builder: (_) => const QrScannerScreen()),
                   );
+                  await _handleTableScanResult(table);
                 },
               ),
               const SizedBox(height: 10),
@@ -962,10 +1001,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           subtitle: 'Scan Table',
                           icon: LucideIcons.qrCode,
                           selected: session.mode == OrderMode.dineIn,
-                          onTap: () {
-                            Navigator.of(context).push(
+                          onTap: () async {
+                            final table = await Navigator.of(context).push<String>(
                               MaterialPageRoute(builder: (_) => const QrScannerScreen()),
                             );
+                            await _handleTableScanResult(table);
                           },
                         ),
                       ),

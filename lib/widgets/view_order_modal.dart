@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart';
 import '../models/order_result.dart';
@@ -18,6 +19,12 @@ import '../utils/ph_mobile_number.dart';
 import 'confirmation_modal.dart';
 
 final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 2);
+
+Future<bool> _openPayMongoCheckout(String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return false;
+  return launchUrl(uri, mode: LaunchMode.externalApplication);
+}
 
 /// Full "View your Order" Modal in Light Mode with Pure White Background
 class ViewOrderModal extends StatefulWidget {
@@ -35,6 +42,45 @@ class ViewOrderModal extends StatefulWidget {
 
     if (order != null && context.mounted) {
       onOrderPlaced?.call();
+
+      if (order.needsOnlinePayment) {
+        final url = order.checkoutUrl;
+        var opened = false;
+        if (url != null && url.isNotEmpty) {
+          opened = await _openPayMongoCheckout(url);
+        }
+        if (!context.mounted) return order;
+
+        final paid = await ConfirmationModal.show(
+          context,
+          title: opened ? 'Complete payment' : 'Confirm e-wallet payment',
+          message: opened
+              ? 'Order #${order.orderNumber} is reserved. Finish GCash / Maya / QRPh / card in the browser, then tap below so the kitchen receives it.'
+              : 'Order #${order.orderNumber} was placed with QRPh / e-Wallets. After you pay, tap “I’ve paid” so it appears on the staff queue.',
+          type: ConfirmationType.success,
+          confirmLabel: "I've paid",
+          cancelLabel: 'Track later',
+          onConfirm: () {},
+        );
+
+        if (paid == true) {
+          try {
+            await ApiService().confirmPayment(orderNumber: order.orderNumber);
+          } catch (_) {}
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Payment confirmed for #${order.orderNumber} — sent to kitchen queue.'),
+                backgroundColor: const Color(0xFFF59E0B),
+              ),
+            );
+          }
+        }
+
+        if (context.mounted) AppTabController.switchTab?.call(1);
+        return order;
+      }
+
       final track = await ConfirmationModal.show(
         context,
         title: 'Order Placed!',
@@ -100,6 +146,16 @@ class _ViewOrderModalState extends State<ViewOrderModal> {
     if (cart.isEmpty) {
       setState(() => _errorMessage = 'Your cart is empty. Add items to order.');
       return;
+    }
+
+    if (!session.canPlaceDineInOrder) {
+      // Staff may have unlocked after preview — re-check live API before blocking
+      final unlocked = await session.refreshStaffSession();
+      if (!unlocked) {
+        setState(() => _errorMessage =
+            'Table #${session.tableNumber} is locked. Ask staff to unlock before ordering.');
+        return;
+      }
     }
 
     final name = _nameCtrl.text.trim();
@@ -178,6 +234,15 @@ class _ViewOrderModalState extends State<ViewOrderModal> {
     final isBulihan = isBulihanArea(city: _selectedCity, barangay: _selectedBarangay);
     final availableBarangays = caviteLocations[_selectedCity] ?? [];
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    // Clear stale lock banner once staff unlocks (polled live).
+    if (session.canPlaceDineInOrder &&
+        _errorMessage != null &&
+        _errorMessage!.toLowerCase().contains('locked')) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _errorMessage = null);
+      });
+    }
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.92,

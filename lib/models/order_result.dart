@@ -60,6 +60,7 @@ class OrderResult {
   final String status; // 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled'
   final double totalAmount;
   final String paymentMethod;
+  final String paymentStatus;
   final String? voucherCode;
   final double discountAmount;
   final String? customerName;
@@ -67,6 +68,7 @@ class OrderResult {
   final String? deliveryAddress;
   final String? deliveryNotes;
   final String? createdAt;
+  final String? checkoutUrl;
   final List<OrderItemModel> items;
 
   const OrderResult({
@@ -79,6 +81,7 @@ class OrderResult {
     required this.status,
     required this.totalAmount,
     required this.paymentMethod,
+    this.paymentStatus = 'pending',
     this.voucherCode,
     this.discountAmount = 0.0,
     this.customerName,
@@ -86,8 +89,20 @@ class OrderResult {
     this.deliveryAddress,
     this.deliveryNotes,
     this.createdAt,
+    this.checkoutUrl,
     this.items = const [],
   });
+
+  bool get needsOnlinePayment {
+    final method = paymentMethod.toLowerCase();
+    if (method.contains('cash') && !method.contains('wallet')) return false;
+    return method.contains('qrph') ||
+        method.contains('wallet') ||
+        method.contains('gcash') ||
+        method.contains('maya') ||
+        method.contains('card') ||
+        (checkoutUrl != null && checkoutUrl!.isNotEmpty);
+  }
 
   /// User friendly status label without emojis
   String get statusLabel {
@@ -148,6 +163,7 @@ class OrderResult {
       status: json['status'] as String? ?? 'pending',
       totalAmount: _toDouble(json['total_amount'] ?? json['total']),
       paymentMethod: json['payment_method'] as String? ?? 'Cash',
+      paymentStatus: json['payment_status'] as String? ?? 'pending',
       voucherCode: json['voucher_code'] as String?,
       discountAmount: _toDouble(json['discount_amount']),
       customerName: json['customer_name'] as String?,
@@ -155,6 +171,7 @@ class OrderResult {
       deliveryAddress: json['delivery_address'] as String?,
       deliveryNotes: json['delivery_notes'] as String?,
       createdAt: json['created_at'] as String?,
+      checkoutUrl: json['checkout_url'] as String?,
       items: parsedItems,
     );
   }
@@ -169,6 +186,7 @@ class OrderResult {
     String? status,
     double? totalAmount,
     String? paymentMethod,
+    String? paymentStatus,
     String? voucherCode,
     double? discountAmount,
     String? customerName,
@@ -176,6 +194,7 @@ class OrderResult {
     String? deliveryAddress,
     String? deliveryNotes,
     String? createdAt,
+    String? checkoutUrl,
     List<OrderItemModel>? items,
   }) {
     return OrderResult(
@@ -188,6 +207,7 @@ class OrderResult {
       status: status ?? this.status,
       totalAmount: totalAmount ?? this.totalAmount,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
       voucherCode: voucherCode ?? this.voucherCode,
       discountAmount: discountAmount ?? this.discountAmount,
       customerName: customerName ?? this.customerName,
@@ -195,6 +215,7 @@ class OrderResult {
       deliveryAddress: deliveryAddress ?? this.deliveryAddress,
       deliveryNotes: deliveryNotes ?? this.deliveryNotes,
       createdAt: createdAt ?? this.createdAt,
+      checkoutUrl: checkoutUrl ?? this.checkoutUrl,
       items: items ?? this.items,
     );
   }
@@ -209,6 +230,7 @@ class OrderResult {
         'status': status,
         'total_amount': totalAmount,
         'payment_method': paymentMethod,
+        'payment_status': paymentStatus,
         'voucher_code': voucherCode,
         'discount_amount': discountAmount,
         'customer_name': customerName,
@@ -216,6 +238,7 @@ class OrderResult {
         'delivery_address': deliveryAddress,
         'delivery_notes': deliveryNotes,
         'created_at': createdAt,
+        if (checkoutUrl != null) 'checkout_url': checkoutUrl,
         'order_items': items.map((i) => i.toJson()).toList(),
       };
 
