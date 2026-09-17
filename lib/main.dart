@@ -22,6 +22,7 @@ import 'utils/deep_link_parser.dart';
 import 'utils/menu_category.dart';
 import 'utils/table_code.dart';
 import 'widgets/table_locked_modal.dart';
+import 'widgets/ai_chatbot_modal.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -172,6 +173,55 @@ class _MainShellState extends State<MainShell> {
               const CartScreen(),
               const AccountScreen(),
             ],
+          ),
+
+          // Floating AI Concierge Button
+          Positioned(
+            right: 20,
+            bottom: 96 + bottomInset,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  AppleTheme.hapticFeedback();
+                  AiChatbotModal.show(context);
+                },
+                borderRadius: BorderRadius.circular(28),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.38),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.sparkles, color: Colors.white, size: 17),
+                      const SizedBox(width: 7),
+                      Text(
+                        'Ask AI',
+                        style: GoogleFonts.workSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
 
           // Custom Floating Bottom Navigation Bar with Safe Area inset for Android & iOS

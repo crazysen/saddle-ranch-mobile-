@@ -10,6 +10,7 @@ import '../providers/auth_provider.dart';
 import '../theme/apple_theme.dart';
 import '../utils/image_url_helper.dart';
 import '../widgets/confirmation_modal.dart';
+import '../widgets/ai_chatbot_modal.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -168,7 +169,73 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Edit Profile Form Card
+          // AI Assistant & Help Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(LucideIcons.sparkles, color: Color(0xFFF59E0B), size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Saddle Ranch AI Assistant',
+                        style: GoogleFonts.domine(
+                          color: const Color(0xFF1F2937),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Ask about menus, branches, promos & hours',
+                        style: GoogleFonts.workSans(color: const Color(0xFF6B7280), fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    AppleTheme.hapticFeedback();
+                    AiChatbotModal.show(context);
+                  },
+                  child: Text(
+                    'Chat',
+                    style: GoogleFonts.workSans(
+                      color: const Color(0xFFF59E0B),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+                    // Edit Profile Form Card
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(

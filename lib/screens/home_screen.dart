@@ -18,6 +18,7 @@ import '../utils/table_code.dart';
 import '../widgets/banner_carousel.dart';
 import '../widgets/confirmation_modal.dart';
 import '../widgets/table_locked_modal.dart';
+import '../widgets/ai_chatbot_modal.dart';
 import 'qr_scanner_screen.dart';
 
 import '../models/order_result.dart';
@@ -856,7 +857,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Notification Bell
+                      // AI Assistant Sparkles Button
+                      IconButton(
+                        icon: const Icon(LucideIcons.sparkles, size: 21, color: AppleColors.primaryAccent),
+                        onPressed: () {
+                          AppleTheme.hapticFeedback();
+                          AiChatbotModal.show(context);
+                        },
+                        tooltip: 'Saddle Ranch AI',
+                      ),
+                                            // Notification Bell
                       Stack(
                         children: [
                           IconButton(

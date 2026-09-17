@@ -8,7 +8,7 @@ void main() {
       expect(MenuCategory.sizzling.label, 'Rice Meals');
       expect(MenuCategory.filipino.label, 'Authentic Filipino');
       expect(MenuCategory.barkada.label, 'Barkada Platters');
-      expect(MenuCategory.drinks.label, 'Drinks and Extra Rice');
+      expect(MenuCategory.drinks.label, 'Drinks & Extra Rice');
     });
 
     test('categoryForProduct accurately assigns categories based on field or fallback', () {
@@ -115,7 +115,7 @@ void main() {
       // 1. Rice Meals (chickenInasal)
       // 2. Authentic Filipino (kareKare)
       // 3. Barkada Platters (platterSisig)
-      // 4. Drinks and Extra Rice (extraRice)
+      // 4. Drinks & Extra Rice (extraRice)
       expect(sorted[0].name, 'Sizzling Chicken Inasal');
       expect(sorted[1].name, 'Kare-Kare');
       expect(sorted[2].name, 'Platter Sisig');

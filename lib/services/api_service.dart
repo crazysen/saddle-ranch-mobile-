@@ -1074,7 +1074,7 @@ class ApiService {
     final candidates = TableCode.lookupCandidates(tableNumber);
     final branchHint = TableCode.branchFromCode(tableNumber);
     final branches = <String>{
-      if (branchHint != null) branchHint,
+      ?branchHint,
       branch,
       'Bulihan',
       'Dasma',
