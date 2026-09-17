@@ -124,7 +124,13 @@ class _AuthScreenState extends State<AuthScreen> {
         }
         return;
       }
-      final errorMsg = auth.error ?? 'Invalid login credentials';
+      String errorMsg = auth.error ?? 'Wrong Email or Password';
+      if (errorMsg.toLowerCase().contains('invalid') &&
+          (errorMsg.toLowerCase().contains('credential') ||
+           errorMsg.toLowerCase().contains('password') ||
+           errorMsg.toLowerCase().contains('email'))) {
+        errorMsg = 'Wrong Email or Password';
+      }
       setState(() {
         _loginErrorMessage = errorMsg;
       });
@@ -135,7 +141,7 @@ class _AuthScreenState extends State<AuthScreen> {
           });
         }
       });
-      // No snackbar for invalid login credentials
+      // No snackbar for wrong email or password
     }
   }
 

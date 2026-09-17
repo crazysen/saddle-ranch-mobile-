@@ -142,7 +142,13 @@ class ApiService {
       }
 
       String errorMessage =
-          body['message']?.toString() ?? 'Invalid login credentials.';
+          body['message']?.toString() ?? 'Wrong Email or Password';
+      if (errorMessage.toLowerCase().contains('invalid') &&
+          (errorMessage.toLowerCase().contains('credential') ||
+           errorMessage.toLowerCase().contains('password') ||
+           errorMessage.toLowerCase().contains('email'))) {
+        errorMessage = 'Wrong Email or Password';
+      }
       if (body['errors'] is Map<String, dynamic>) {
         final errMap = body['errors'] as Map<String, dynamic>;
         final firstKey = errMap.keys.firstOrNull;
