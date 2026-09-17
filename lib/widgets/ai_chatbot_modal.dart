@@ -590,86 +590,37 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Stack(
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
-                          child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(3),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/saddle_ranch_logo.png',
+                          fit: BoxFit.contain,
                         ),
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Saddle Ranch AI',
-                                style: GoogleFonts.domine(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: const Color(0xFF1F2937),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF3C7),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  widget.currentBranch,
-                                  style: GoogleFonts.workSans(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 10,
-                                    color: const Color(0xFFB45309),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Online • Instant Answers',
-                            style: GoogleFonts.workSans(
-                              color: const Color(0xFF10B981),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'Help Assisstant',
+                        style: GoogleFonts.domine(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          color: const Color(0xFF1F2937),
+                        ),
                       ),
                     ),
                     IconButton(
@@ -817,7 +768,7 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Saddle Ranch AI',
+                              'Help Assisstant',
                               style: GoogleFonts.workSans(
                                 color: const Color(0xFFF59E0B),
                                 fontWeight: FontWeight.bold,
@@ -841,21 +792,22 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
             ),
           ),
 
-          Container(
-            height: 44,
-            margin: const EdgeInsets.only(bottom: 8),
+          SizedBox(
+            height: 40,
             child: ListView(
               scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
                 _buildQuickChip('📍 Locations', 'locations'),
                 _buildQuickChip('🕒 Hours', 'hours'),
                 _buildQuickChip('🥩 Menu & Prices', 'prices'),
                 _buildQuickChip('🎉 Promos', 'promos'),
-                _buildQuickChip('🏷️ Vouchers', 'vouchers'),
+                _buildQuickChip('🎟️ Vouchers', 'vouchers'),
               ],
             ),
           ),
+          const SizedBox(height: 10),
 
           Container(
             padding: EdgeInsets.fromLTRB(16, 10, 16, 14 + bottomInset),
@@ -927,20 +879,38 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
   }
 
   Widget _buildQuickChip(String label, String topic) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      child: ActionChip(
-        label: Text(label),
-        labelStyle: GoogleFonts.workSans(
-          color: const Color(0xFF1F2937),
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _handleQuickOption(topic),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: GoogleFonts.workSans(
+                color: const Color(0xFF374151),
+                fontWeight: FontWeight.w600,
+                fontSize: 12.5,
+              ),
+            ),
+          ),
         ),
-        backgroundColor: Colors.white,
-        side: const BorderSide(color: Color(0xFFE5E7EB)),
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        onPressed: () => _handleQuickOption(topic),
       ),
     );
   }

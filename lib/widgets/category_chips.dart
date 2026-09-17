@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../utils/menu_category.dart';
 
-/// Web-matching category tab bar: Popular · Rice Meals · …
+/// Web-matching category tab bar: Popular · Rice Meals · … in clean light/white mode
 class CategoryChips extends StatelessWidget {
   final MenuCategory selected;
   final ValueChanged<MenuCategory> onSelected;
@@ -19,10 +19,10 @@ class CategoryChips extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1612),
+        color: Colors.white,
         border: Border(
-          top: BorderSide(color: Color(0xFF262627)),
-          bottom: BorderSide(color: Color(0xFF262627)),
+          top: BorderSide(color: Color(0xFFF3F4F6)),
+          bottom: BorderSide(color: Color(0xFFE5E7EB)),
         ),
       ),
       child: SizedBox(
@@ -46,19 +46,19 @@ class CategoryChips extends StatelessWidget {
                       category.label,
                       style: GoogleFonts.workSans(
                         fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                        fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
                         color: isSelected
-                            ? const Color(0xFFFFC174)
-                            : const Color(0xFF8C7A6B),
+                            ? const Color(0xFFEA580C)
+                            : const Color(0xFF6B7280),
                       ),
                     ),
                     const SizedBox(height: 6),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      height: 2,
+                      height: 2.5,
                       width: isSelected ? _underlineWidth(category.label) : 0,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B),
+                        color: const Color(0xFFEA580C),
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),

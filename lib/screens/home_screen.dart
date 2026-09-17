@@ -1267,7 +1267,7 @@ class _HomeScreenState extends State<HomeScreen> {
           name: 'Sizzling Chicken Inasal',
           description: 'Bacolod-style chargrilled chicken quarter served sizzling with savory chicken oil and garlic rice.',
           price: 120.0,
-          imagePath: 'https://saddle-ranch-web.onrender.com/images/Menu/chicken_inasal.webp',
+          imagePath: '/images/Menu/chicken_inasal.webp',
           category: 'Sizzling Rice Meals',
           stockQuantity: 50,
           isActive: true,
@@ -1279,7 +1279,7 @@ class _HomeScreenState extends State<HomeScreen> {
           name: 'Sizzling Sisig (w/ Egg)',
           description: 'Crispy chopped pork seasoned with onions, calamansi, and chili, topped with a fresh egg.',
           price: 100.0,
-          imagePath: 'https://saddle-ranch-web.onrender.com/images/Menu/sisig.webp',
+          imagePath: '/images/Menu/sisig.webp',
           category: 'Sizzling Rice Meals',
           stockQuantity: 60,
           isActive: true,
@@ -1291,7 +1291,7 @@ class _HomeScreenState extends State<HomeScreen> {
           name: 'Sizzling Beef Teriyaki',
           description: 'Tender slices of beef glazed with sweet-savory teriyaki sauce on a sizzling platter.',
           price: 140.0,
-          imagePath: 'https://saddle-ranch-web.onrender.com/images/Menu/beef_teriyaki.webp',
+          imagePath: '/images/Menu/beef_teriyaki.webp',
           category: 'Sizzling Rice Meals',
           stockQuantity: 50,
           isActive: true,
@@ -1308,21 +1308,21 @@ class _HomeScreenState extends State<HomeScreen> {
     {
       'title': 'Sizzling Rice Meals',
       'description': 'Complete hearty platters with garlic rice, topped with tender meats and savory gravies on hot cast iron.',
-      'imageUrl': 'https://saddle-ranch-web.onrender.com/images/Menu/sisig.webp',
+      'imageUrl': '/images/Menu/sisig.webp',
       'badge': 'SISIG',
       'category': MenuCategory.sizzling,
     },
     {
       'title': 'Authentic Filipino Cuisine',
       'description': 'Time-honored Filipino heritage recipes cooked sizzling hot with bold local seasonings and native flair.',
-      'imageUrl': 'https://saddle-ranch-web.onrender.com/images/FilipinoCousines/pork_sinigang.webp',
+      'imageUrl': '/images/FilipinoCousines/pork_sinigang.webp',
       'badge': 'PORK SINIGANG',
       'category': MenuCategory.filipino,
     },
     {
       'title': 'Barkada Platters',
       'description': 'Generous sharing platters made for group feasts, family gatherings, and roadhouse celebrations.',
-      'imageUrl': 'https://saddle-ranch-web.onrender.com/images/Platters/platter_sisig.webp',
+      'imageUrl': '/images/Platters/platter_sisig.webp',
       'badge': 'SISIG PLATTER',
       'category': MenuCategory.barkada,
     },
@@ -1407,26 +1407,6 @@ class _FeaturedSizzlingCard extends StatelessWidget {
                       color: Colors.white,
                       letterSpacing: 0.5,
                     ),
-                  ),
-                ),
-              ),
-              // Red circular indicator dot
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDC2626),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFDC2626).withValues(alpha: 0.6),
-                        blurRadius: 6,
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -1645,26 +1625,6 @@ class _SizzlingCategoryCard extends StatelessWidget {
                           color: Colors.white,
                           letterSpacing: 0.5,
                         ),
-                      ),
-                    ),
-                  ),
-                  // Red circular indicator dot
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDC2626),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFDC2626).withValues(alpha: 0.6),
-                            blurRadius: 6,
-                          ),
-                        ],
                       ),
                     ),
                   ),
