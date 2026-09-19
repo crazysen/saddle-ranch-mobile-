@@ -220,6 +220,34 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppleColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppleColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.mail,
+                        size: 16,
+                        color: AppleColors.mutedText,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Didn't get the code? Check your Spam or Junk folder.",
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppleColors.mutedText,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextButton(
                   onPressed: auth.busy ? null : _resend,
                   child: Text(
