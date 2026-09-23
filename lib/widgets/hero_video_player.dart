@@ -258,55 +258,25 @@ class _HeroVideoPlayerState extends State<HeroVideoPlayer> {
               ),
             ),
 
-            // Top Header: Badge & Mute Toggle
+            // Top Header: Mute Toggle
             Positioned(
               top: 10,
-              left: 12,
               right: 12,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C150E).withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.6)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(LucideIcons.flame, size: 12, color: Color(0xFFF59E0B)),
-                        const SizedBox(width: 4),
-                        Text(
-                          'ROADHOUSE SIZZLER',
-                          style: GoogleFonts.inter(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                            color: const Color(0xFFFFC174),
-                          ),
-                        ),
-                      ],
-                    ),
+              child: GestureDetector(
+                onTap: _toggleMute,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24),
                   ),
-                  GestureDetector(
-                    onTap: _toggleMute,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: Icon(
-                        _isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
-                        size: 14,
-                        color: Colors.white,
-                      ),
-                    ),
+                  child: Icon(
+                    _isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
+                    size: 14,
+                    color: Colors.white,
                   ),
-                ],
+                ),
               ),
             ),
 
