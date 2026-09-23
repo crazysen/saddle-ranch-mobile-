@@ -16,6 +16,7 @@ import '../providers/order_session_provider.dart';
 import '../utils/menu_category.dart';
 import '../utils/table_code.dart';
 import '../widgets/banner_carousel.dart';
+import '../widgets/hero_video_player.dart';
 import '../widgets/confirmation_modal.dart';
 import '../widgets/table_locked_modal.dart';
 import '../widgets/ai_chatbot_modal.dart';
@@ -1050,10 +1051,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // 4. Promotion Banner Carousel
+              // 4. Hero Sizzler Videos
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.only(top: 14),
+                  child: HeroVideoPlayer(),
+                ),
+              ),
+
+              // 5. Promotion Banner Carousel
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 18),
+                  padding: const EdgeInsets.only(top: 14),
                   child: BannerCarousel(
                     banners: menu.banners,
                     onSeeAll: () => widget.onOpenMenu(),

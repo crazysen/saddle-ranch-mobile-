@@ -62,6 +62,10 @@ flutter:
     - assets/images/google_logo.png
     - assets/images/saddle_ranch_logo.png
     - assets/videos/landing-video.mp4
+    - assets/videos/porkchop.mp4
+    - assets/videos/sisig.mp4
+    - assets/videos/spicy_beef.mp4
+    - assets/videos/tapsilog.mp4
 
   # To add assets to your application, add an assets section, like this:
   # assets:

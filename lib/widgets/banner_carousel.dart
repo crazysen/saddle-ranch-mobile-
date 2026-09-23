@@ -163,7 +163,25 @@ class _BannerCarouselState extends State<BannerCarousel> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              if (promo.branch.isNotEmpty && promo.branch.toLowerCase() != 'all')
+                              if (promo.badge != null && promo.badge!.isNotEmpty)
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFA000),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    promo.badge!,
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 9,
+                                      color: Colors.black,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                )
+                              else if (promo.branch.isNotEmpty && promo.branch.toLowerCase() != 'all')
                                 Container(
                                   margin: const EdgeInsets.only(bottom: 6),
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

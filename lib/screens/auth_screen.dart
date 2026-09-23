@@ -301,11 +301,14 @@ class _AuthScreenState extends State<AuthScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Upper-left Logo
-                      Image.asset(
-                        'assets/images/saddle_ranch_logo.png',
-                        height: isCompactScreen ? 46 : 56,
-                        fit: BoxFit.contain,
+                      // Centered & Enlarged Saddle Ranch Logo
+                      Align(
+                        alignment: Alignment.topCenter,
+                        child: Image.asset(
+                          'assets/images/saddle_ranch_logo.png',
+                          height: isCompactScreen ? 74 : 88,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                       // Responsive Headline Text (strictly above the bottom sheet)
                       Padding(
