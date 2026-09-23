@@ -225,157 +225,170 @@ class _AuthScreenState extends State<AuthScreen> {
     final mediaQuery = MediaQuery.of(context);
     final auth = context.watch<AuthProvider>();
 
+    final screenWidth = mediaQuery.size.width;
     final screenHeight = mediaQuery.size.height;
     final topPadding = mediaQuery.padding.top;
     final isCompactScreen = screenHeight < 680;
 
-    // Login Sheet top position: calculated responsively so Hero (logo + headline) has ample breathing room
-    final sheetTop = _isSignUp ? 0.0 : (screenHeight * 0.38).clamp(220.0, 320.0);
-    final sheetRadius = _isSignUp ? 0.0 : 32.0;
+    // Detect if software keyboard is active
+    final isKeyboardOpen = mediaQuery.viewInsets.bottom > 50;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // A. Background Hero Image Layer
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: _isSignUp ? screenHeight * 0.45 : sheetTop + 32,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 400),
-              opacity: _isSignUp ? 0.2 : 1.0,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    'assets/images/frame_005.png',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF2C1400), _primaryOrange],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                    ),
-                  ),
+    // Adaptive logo sizing based on screen dimensions (bigger and responsive)
+    final logoHeight = (screenWidth * 0.32).clamp(105.0, 140.0);
 
-                  // Dark Scrim Gradient Overlay
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.15),
-                            Colors.black.withValues(alpha: 0.45),
-                            Colors.black.withValues(alpha: 0.9),
-                          ],
-                          stops: const [0.0, 0.45, 1.0],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    // Login Sheet top position: when typing with keyboard, expand to whole screen (0.0)
+    // When closed, calculate responsively so Hero (logo + headline) has ample breathing room
+    final isFullScreenSheet = _isSignUp || isKeyboardOpen;
+    final sheetTop = isFullScreenSheet ? 0.0 : (screenHeight * 0.40).clamp(260.0, 360.0);
+    final sheetRadius = isFullScreenSheet ? 0.0 : 32.0;
 
-          // B. Hero Content (Logo at upper-left corner & responsive headline strictly above sheetTop)
-          if (!_isSignUp)
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(
+          children: [
+            // A. Background Hero Image Layer
             Positioned(
               top: 0,
               left: 0,
               right: 0,
-              height: sheetTop,
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Centered & Enlarged Saddle Ranch Logo
-                      Align(
-                        alignment: Alignment.topCenter,
-                        child: Image.asset(
-                          'assets/images/saddle_ranch_logo.png',
-                          height: isCompactScreen ? 74 : 88,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      // Responsive Headline Text (strictly above the bottom sheet)
-                      Padding(
-                        padding: EdgeInsets.only(bottom: isCompactScreen ? 12 : 18),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Log in to stay on top\nof your sizzling orders.',
-                            style: GoogleFonts.domine(
-                              fontWeight: FontWeight.w700,
-                              fontSize: isCompactScreen ? 20 : 23,
-                              color: Colors.white,
-                              height: 1.22,
-                              shadows: const [
-                                Shadow(
-                                  color: Colors.black87,
-                                  blurRadius: 10,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
+              height: isFullScreenSheet ? 0 : sheetTop + 32,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 350),
+                opacity: isFullScreenSheet ? 0.0 : 1.0,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(
+                      'assets/images/frame_005.png',
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF2C1400), _primaryOrange],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+
+                    // Dark Scrim Gradient Overlay
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.15),
+                              Colors.black.withValues(alpha: 0.45),
+                              Colors.black.withValues(alpha: 0.9),
+                            ],
+                            stops: const [0.0, 0.45, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
 
-          // B. Expanding White Card Sheet (AnimatedPositioned Half-Page ↔ Full-Screen)
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.fastOutSlowIn,
-            top: sheetTop,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.fastOutSlowIn,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 24,
-                    offset: Offset(0, -6),
+            // B. Hero Content (Logo at upper-center & responsive headline strictly above sheetTop)
+            if (!isFullScreenSheet)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: sheetTop,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Centered, Enlarged & Adaptive Saddle Ranch Logo
+                        Align(
+                          alignment: Alignment.topCenter,
+                          child: Image.asset(
+                            'assets/images/saddle_ranch_logo.png',
+                            height: logoHeight,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        // Responsive Headline Text (strictly above the bottom sheet)
+                        Padding(
+                          padding: EdgeInsets.only(bottom: isCompactScreen ? 12 : 18),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Log in to stay on top\nof your sizzling orders.',
+                              style: GoogleFonts.domine(
+                                fontWeight: FontWeight.w700,
+                                fontSize: isCompactScreen ? 20 : 23,
+                                color: Colors.white,
+                                height: 1.22,
+                                shadows: const [
+                                  Shadow(
+                                    color: Colors.black87,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
-              child: SafeArea(
-                top: _isSignUp,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 350),
-                  switchInCurve: Curves.easeIn,
-                  switchOutCurve: Curves.easeOut,
-                  child: _isSignUp
-                      ? _buildSignUpContent(context, auth, topPadding)
-                      : _buildLoginContent(context, auth),
+
+            // C. Expanding White Card Sheet (AnimatedPositioned Half-Page ↔ Full-Screen)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+              top: sheetTop,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 24,
+                      offset: Offset(0, -6),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  top: isFullScreenSheet,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    switchInCurve: Curves.easeIn,
+                    switchOutCurve: Curves.easeOut,
+                    child: _isSignUp
+                        ? _buildSignUpContent(context, auth, topPadding)
+                        : _buildLoginContent(context, auth),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
+import '../models/order_result.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/order_session_provider.dart';
@@ -89,7 +90,7 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
   }
 
   void _initWelcomeMessage() {
-    const welcome = 'Welcome to Saddle Ranch! 🤠 How can I assist you today? Select an option below for locations, hours, menu prices, or special promos.';
+    const welcome = 'Welcome to Saddle Ranch! 🤠 How can I assist you today? Select an option below to track orders, check locations, hours, menu prices, or special promos.';
     final msg = _ChatMessage(
       id: 'welcome-${DateTime.now().millisecondsSinceEpoch}',
       isUser: false,
@@ -245,11 +246,195 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
         '• **Sizzling Gambas**: ₱220.00';
   }
 
+  String _formatOrderCard(OrderResult order) {
+    String statusTitle;
+    String statusDesc;
+
+    switch (order.status.toLowerCase()) {
+      case 'pending':
+        statusTitle = '⏳ **Status: Order Pending**';
+        statusDesc = 'Received by Saddle Ranch. Awaiting cashier/kitchen confirmation.';
+        break;
+      case 'preparing':
+        statusTitle = '🔥 **Status: Preparing in Kitchen**';
+        statusDesc = 'Chefs are currently preparing & grilling your order!';
+        break;
+      case 'ready':
+        statusTitle = '🍽️ **Status: Ready!**';
+        statusDesc = order.orderType == 'delivery'
+            ? 'Packed and ready for rider dispatch!'
+            : 'Fresh off the grill and ready for pickup / serving!';
+        break;
+      case 'completed':
+        statusTitle = '✅ **Status: Completed**';
+        statusDesc = 'Order delivered and fulfilled. Enjoy your meal!';
+        break;
+      case 'cancelled':
+        statusTitle = '❌ **Status: Cancelled**';
+        statusDesc = 'This order has been cancelled.';
+        break;
+      default:
+        statusTitle = '📦 **Status: ${order.status.toUpperCase()}**';
+        statusDesc = 'Order is currently being processed.';
+    }
+
+    String typeLabel;
+    switch (order.orderType.toLowerCase()) {
+      case 'dine_in':
+        typeLabel = 'Dine-In${order.tableNumber != null && order.tableNumber!.isNotEmpty ? ' (Table #${order.tableNumber})' : ''}';
+        break;
+      case 'express_takeout':
+        typeLabel = 'Express Takeout';
+        break;
+      case 'pickup':
+        typeLabel = 'Store Pick-up';
+        break;
+      case 'delivery':
+        typeLabel = 'Online Delivery${order.deliveryAddress != null && order.deliveryAddress!.isNotEmpty ? ' (${order.deliveryAddress})' : ''}';
+        break;
+      default:
+        typeLabel = order.orderType;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('🧾 **Order #${order.orderNumber}**');
+    buffer.writeln(statusTitle);
+    buffer.writeln('ℹ️ *$statusDesc*');
+    buffer.writeln('📍 **Branch**: ${order.branch} Branch');
+    buffer.writeln('🛍️ **Type**: $typeLabel');
+
+    if (order.items.isNotEmpty) {
+      buffer.writeln('📋 **Items**:');
+      final previewItems = order.items.take(4).toList();
+      for (final itm in previewItems) {
+        buffer.writeln('  • ${itm.quantity}x ${itm.productName} (₱${itm.subtotal.toStringAsFixed(2)})');
+      }
+      if (order.items.length > 4) {
+        buffer.writeln('  • *...and ${order.items.length - 4} more item(s)*');
+      }
+    }
+
+    buffer.writeln('💰 **Total**: ₱${order.totalAmount.toStringAsFixed(2)}');
+    final payStatus = order.paymentStatus.toLowerCase() == 'paid' ? 'Paid' : 'Payment: ${order.paymentStatus}';
+    buffer.writeln('💳 **Payment**: ${order.paymentMethod} ($payStatus)');
+
+    return buffer.toString().trim();
+  }
+
+  Future<String> _getOrderTrackingResponse({String? explicitQuery}) async {
+    try {
+      final user = mounted ? context.read<AuthProvider>().user : null;
+
+      if (explicitQuery != null && explicitQuery.trim().isNotEmpty) {
+        final query = explicitQuery.trim();
+        final results = await _api.trackOrders(query: query);
+        if (results.isNotEmpty) {
+          final buffer = StringBuffer('📦 **Order Found**:\n\n');
+          for (int i = 0; i < results.length && i < 2; i++) {
+            if (i > 0) buffer.writeln('\n---\n');
+            buffer.writeln(_formatOrderCard(results[i]));
+          }
+          buffer.writeln('\n💡 *You can view live kitchen updates in the Orders tab anytime.*');
+          return buffer.toString();
+        } else {
+          return '🔍 **Order Lookup**:\n\n'
+              'We could not find an order matching `"$query"`.\n\n'
+              '• Please double-check your Order Number (e.g. `SR-10492` or `#10492`).\n'
+              '• Or reply with the mobile phone number used during checkout.\n'
+              '• You can also view all orders directly in the **Orders** tab at the bottom!';
+        }
+      }
+
+      // No explicit query: retrieve active & recent orders
+      final allOrders = await _api.trackOrders(all: true);
+
+      // If user is authenticated, also check customer orders
+      if (user != null) {
+        try {
+          final custOrders = await _api.fetchCustomerOrders();
+          for (final co in custOrders) {
+            if (!allOrders.any((o) => o.orderNumber == co.orderNumber)) {
+              allOrders.add(co);
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Sort newest first
+      allOrders.sort((a, b) => b.id.compareTo(a.id));
+
+      final activeOrders = allOrders.where((o) =>
+          o.status.toLowerCase() != 'completed' &&
+          o.status.toLowerCase() != 'cancelled').toList();
+
+      if (activeOrders.isNotEmpty) {
+        final buffer = StringBuffer('📦 **Your Active Order(s)**:\n\n');
+        for (int i = 0; i < activeOrders.length && i < 2; i++) {
+          if (i > 0) buffer.writeln('\n---\n');
+          buffer.writeln(_formatOrderCard(activeOrders[i]));
+        }
+        if (activeOrders.length > 2) {
+          buffer.writeln('\n*+${activeOrders.length - 2} more active order(s) in your Orders tab.*');
+        }
+        buffer.writeln('\n💡 *Reply with a specific Order # (e.g. `SR-10492`) to look up any other order!*');
+        return buffer.toString();
+      }
+
+      if (allOrders.isNotEmpty) {
+        final latest = allOrders.first;
+        final buffer = StringBuffer('📦 **No Active Orders in Preparation**\n\n'
+            'Here is your most recent completed order:\n\n');
+        buffer.writeln(_formatOrderCard(latest));
+        buffer.writeln('\n💡 *Reply with an Order # (e.g. `SR-10492`) or phone number to track another order!*');
+        return buffer.toString();
+      }
+
+      return '📦 **Order Tracker & Status**\n\n'
+          'You don\'t have any active or recent orders recorded on this device yet.\n\n'
+          '• If you have an order, reply with your **Order #** (e.g. `SR-10492` or `#10492`).\n'
+          '• You can also track by replying with your **Phone Number** used at checkout.\n'
+          '• Visit the **Orders** tab at the bottom to see your full order history!';
+    } catch (_) {
+      return '⚠️ Unable to fetch order details at this moment. Please check your internet connection or check the **Orders** tab.';
+    }
+  }
+
   Future<String> _generateSmartResponse(String userText) async {
     final q = userText.toLowerCase().trim();
 
     if (RegExp(r'\b(hi|hello|hey|good\s+morning|good\s+afternoon|good\s+evening|howdy|sup)\b').hasMatch(q)) {
-      return 'Howdy partner! 🤠 Welcome to Saddle Ranch Roadhouse. Are you looking for our sizzling steaks, branch locations, operating hours, or special vouchers today?';
+      return 'Howdy partner! 🤠 Welcome to Saddle Ranch Roadhouse. Are you looking for your order status, our sizzling steaks, branch locations, operating hours, or special vouchers today?';
+    }
+
+    if (RegExp(r'\b(how\s+to\s+order|how\s+do\s+i\s+order|order\s+process|ordering\s+steps)\b').hasMatch(q)) {
+      return '🤠 **How to Order at Saddle Ranch**:\n\n'
+          '• **Dine-In**: Scan the QR code on your table and order directly from your phone!\n'
+          '• **Pick-Up**: Select your favorites from the Menu, head to checkout, and choose your pick-up branch.\n'
+          '• **Delivery**: Add items to your cart, select Delivery, enter your address, and checkout.\n\n'
+          '💡 *Already placed an order? Ask me "Track my order" or reply with your Order # anytime!*';
+    }
+
+    // Order tracking & status detection
+    final orderNumRegex = RegExp(r'\b(SR[-_]?[0-9A-Za-z]+|#\d{3,})\b', caseSensitive: false);
+    final phoneRegex = RegExp(r'\b(09\d{9}|\+?639\d{9})\b');
+    final isOrderIntent = RegExp(
+      r'\b(order|orders|track|tracking|status|receipt|package|parcel|food\s*status|where\s*(is|are)?\s*(my)?\s*(food|order|meal))\b',
+      caseSensitive: false,
+    ).hasMatch(q);
+
+    if (orderNumRegex.hasMatch(userText)) {
+      final match = orderNumRegex.firstMatch(userText)!.group(0)!;
+      final cleanMatch = match.replaceFirst('#', '');
+      return await _getOrderTrackingResponse(explicitQuery: cleanMatch);
+    }
+
+    if (phoneRegex.hasMatch(userText)) {
+      final phone = phoneRegex.firstMatch(userText)!.group(0)!;
+      return await _getOrderTrackingResponse(explicitQuery: phone);
+    }
+
+    if (isOrderIntent) {
+      return await _getOrderTrackingResponse();
     }
 
     if (RegExp(r'\b(location|address|where|branch|branches|bulihan|dasma|silang|directions)\b').hasMatch(q)) {
@@ -306,12 +491,13 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
     }
 
     return 'I\'d be happy to help with that! Here is what I can provide for you right now:\n\n'
+        '• 📦 **Order Tracking & Live Status**\n'
         '• 📍 **Locations & Branches**\n'
         '• 🕒 **Daily Operating Hours**\n'
         '• 🥩 **Live Menu Prices**\n'
         '• 🎟️ **Store Discounts & Promos**\n'
         '• 🏷️ **Vouchers & Coupon Codes**\n\n'
-        'Tap any of the quick options below, or ask me about our steaks and special meals!';
+        'Tap any of the quick options below, or ask me about tracking your order, our steaks, and special promos!';
   }
 
   Future<void> _handleUserSubmit(String text) async {
@@ -363,6 +549,10 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
     Future<String> Function() getReply;
 
     switch (topic) {
+      case 'orders':
+        userLabel = 'Track Order';
+        getReply = () => _getOrderTrackingResponse();
+        break;
       case 'locations':
         userLabel = 'Locations';
         getReply = () async => _getLocationsResponse();
@@ -615,7 +805,7 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Help Assisstant',
+                        'Help Assistant',
                         style: GoogleFonts.domine(
                           fontWeight: FontWeight.bold,
                           fontSize: 17,
@@ -768,7 +958,7 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Help Assisstant',
+                              'Help Assistant',
                               style: GoogleFonts.workSans(
                                 color: const Color(0xFFF59E0B),
                                 fontWeight: FontWeight.bold,
@@ -799,6 +989,7 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
               clipBehavior: Clip.none,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
+                _buildQuickChip('📦 Track Order', 'orders'),
                 _buildQuickChip('📍 Locations', 'locations'),
                 _buildQuickChip('🕒 Hours', 'hours'),
                 _buildQuickChip('🥩 Menu & Prices', 'prices'),
@@ -838,7 +1029,7 @@ class _AiChatbotModalState extends State<AiChatbotModal> {
                       onSubmitted: _handleUserSubmit,
                       style: GoogleFonts.workSans(color: const Color(0xFF1F2937), fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'Ask about steak, promos, branches...',
+                        hintText: 'Ask about orders, steaks, promos, branches...',
                         hintStyle: GoogleFonts.workSans(color: const Color(0xFF9CA3AF), fontSize: 13.5),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                         border: InputBorder.none,
