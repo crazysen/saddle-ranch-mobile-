@@ -93,7 +93,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _handleTableScanResult(String? table) async {
     if (!mounted || table == null || table.isEmpty) return;
     final session = context.read<OrderSessionProvider>();
+    final menu = context.read<MenuProvider>();
     // Lock QR branch to the table code (B- = Bulihan, D- = Dasma) before status check
+    final qrBranch = TableCode.branchFromCode(table) ?? TableCode.branchFromCode(TableCode.normalize(table));
+    if (qrBranch != null) {
+      session.setBranch(qrBranch);
+      menu.setBranch(qrBranch);
+    }
     session.startDineInFromTable(table, staffSessionActive: false);
     final gate = await TableLockedModal.showIfLocked(
       context,
@@ -104,9 +110,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (gate == TableLockGateResult.unlocked) {
       session.setStaffSessionActive(true);
+      if (qrBranch != null) {
+        session.setBranch(qrBranch);
+        menu.setBranch(qrBranch);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Table #${TableCode.normalize(table)} unlocked — you can order now.'),
+          content: Text('Table #${TableCode.normalize(table)} unlocked — you can order now (${session.branch} Branch).'),
           backgroundColor: const Color(0xFFF59E0B),
         ),
       );

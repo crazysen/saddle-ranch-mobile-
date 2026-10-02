@@ -1079,12 +1079,9 @@ class ApiService {
   }) async {
     final candidates = TableCode.lookupCandidates(tableNumber);
     final branchHint = TableCode.branchFromCode(tableNumber);
-    final branches = <String>{
-      ?branchHint,
-      branch,
-      'Bulihan',
-      'Dasma',
-    }.toList();
+    final primaryBranch = branchHint ?? branch;
+    final otherBranch = primaryBranch.toLowerCase().contains('dasma') ? 'Bulihan' : 'Dasma';
+    final branches = <String>[primaryBranch, otherBranch];
 
     TableSessionStatus? best;
     try {
@@ -1108,12 +1105,12 @@ class ApiService {
       return best ??
           TableSessionStatus.lockedFallback(
             tableNumber,
-            branch: branchHint ?? branch,
+            branch: primaryBranch,
           );
     } catch (_) {
       return TableSessionStatus.lockedFallback(
         tableNumber,
-        branch: branchHint ?? branch,
+        branch: primaryBranch,
       );
     }
   }
@@ -1144,16 +1141,23 @@ class ApiService {
     );
   }
 
-  /// GET /table-unlock-request/status?table_number=...
+  /// GET /table-unlock-request/status?table_number=...&branch=...
   Future<String> getTableUnlockRequestStatus({
     required String tableNumber,
+    String? branch,
   }) async {
     try {
       final headers = await _buildHeaders();
-      for (final code in TableCode.lookupCandidates(tableNumber)) {
+      final branchKey = TableCode.branchFromCode(tableNumber) ?? branch;
+      final candidates = TableCode.lookupCandidates(tableNumber);
+      for (final code in candidates) {
+        final query = <String, String>{
+          'table_number': code,
+          if (branchKey != null && branchKey.isNotEmpty) 'branch': branchKey,
+        };
         final uri = Uri.parse(
           ApiConfig.tableUnlockRequestStatus,
-        ).replace(queryParameters: {'table_number': code});
+        ).replace(queryParameters: query);
         final response = await _client.get(uri, headers: headers);
         final body = _decode(response);
         if (response.statusCode >= 200 && response.statusCode < 300) {

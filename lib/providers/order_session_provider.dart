@@ -117,13 +117,14 @@ class OrderSessionProvider extends ChangeNotifier {
     try {
       final response = await http
           .get(Uri.parse('https://ipwho.is/'))
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 4));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic> && data['success'] == true) {
           final lat = (data['latitude'] as num?)?.toDouble();
           final lon = (data['longitude'] as num?)?.toDouble();
           final city = (data['city'] as String?)?.toLowerCase() ?? '';
+          final region = (data['region'] as String?)?.toLowerCase() ?? '';
 
           if (lat != null && lon != null) {
             final distBulihan = calculateDistance(lat, lon, bulihanLat, bulihanLng);
@@ -137,10 +138,10 @@ class OrderSessionProvider extends ChangeNotifier {
               'city': data['city'],
               'success': true,
             };
-          } else if (city.contains('dasma') || city.contains('bacoor') || city.contains('imus')) {
+          } else if (city.contains('dasma') || city.contains('bacoor') || city.contains('imus') || city.contains('cavite') || city.contains('trias') || region.contains('dasma')) {
             setBranch('Dasma');
             return {'branch': 'Dasma', 'city': data['city'], 'success': true};
-          } else if (city.contains('silang') || city.contains('tagaytay') || city.contains('bulihan')) {
+          } else if (city.contains('silang') || city.contains('tagaytay') || city.contains('bulihan') || city.contains('amadeo')) {
             setBranch('Bulihan');
             return {'branch': 'Bulihan', 'city': data['city'], 'success': true};
           }
@@ -181,7 +182,7 @@ class OrderSessionProvider extends ChangeNotifier {
     bool staffSessionActive = true,
   }) {
     final tableId = TableCode.normalize(table);
-    final qrBranch = TableCode.branchFromCode(table);
+    final qrBranch = TableCode.branchFromCode(table) ?? TableCode.branchFromCode(tableId);
     if (qrBranch != null) {
       _branch = qrBranch;
     }
@@ -229,6 +230,11 @@ class OrderSessionProvider extends ChangeNotifier {
         branch: TableCode.branchFromCode(_tableNumber!) ?? _branch,
       );
       final active = !session.isLocked;
+      if (session.branch.isNotEmpty && (session.branch == 'Dasma' || session.branch == 'Bulihan')) {
+        if (_branch != session.branch && active) {
+          _branch = session.branch;
+        }
+      }
       if (_staffSessionActive != active) {
         _staffSessionActive = active;
         if (active) {

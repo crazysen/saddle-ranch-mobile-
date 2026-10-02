@@ -102,6 +102,7 @@ class _TableLockedModalState extends State<TableLockedModal> {
       );
       final unlock = await ApiService().getTableUnlockRequestStatus(
         tableNumber: widget.tableNumber,
+        branch: widget.branch,
       );
       if (!mounted) return;
 

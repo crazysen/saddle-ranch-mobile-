@@ -1,3 +1,5 @@
+import 'table_code.dart';
+
 String? extractTableFromUri(Uri uri) {
   final table = uri.queryParameters['table'];
   if (table != null && table.trim().isNotEmpty) {
@@ -13,6 +15,20 @@ String? extractTableFromUri(Uri uri) {
     }
   }
 
+  return null;
+}
+
+String? extractBranchFromUri(Uri uri) {
+  final b = uri.queryParameters['branch'];
+  if (b != null && b.trim().isNotEmpty) {
+    final lower = b.trim().toLowerCase();
+    if (lower.contains('dasma')) return 'Dasma';
+    if (lower.contains('bulihan')) return 'Bulihan';
+  }
+  final table = extractTableFromUri(uri);
+  if (table != null) {
+    return TableCode.branchFromCode(table);
+  }
   return null;
 }
 

@@ -27,10 +27,16 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     super.dispose();
   }
 
-  void _applyTable(String table) {
+  void _applyTable(String table, {String? branchOverride}) {
     if (_handled || !mounted) return;
     _handled = true;
     final normalized = TableCode.normalize(table);
+    final targetBranch = branchOverride ??
+        TableCode.branchFromCode(table) ??
+        TableCode.branchFromCode(normalized) ??
+        context.read<OrderSessionProvider>().branch;
+
+    context.read<OrderSessionProvider>().setBranch(targetBranch);
 
     showModalBottomSheet(
       context: context,
@@ -58,7 +64,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Table #$normalized Recognized',
+                  'Table #$normalized Recognized ($targetBranch)',
                   style: GoogleFonts.domine(
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
@@ -89,6 +95,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     style: GoogleFonts.inter(fontSize: 12, color: AppleColors.mutedText),
                   ),
                   onTap: () {
+                    context.read<OrderSessionProvider>().setBranch(targetBranch);
                     context.read<OrderSessionProvider>().startDineInFromTable(
                           normalized,
                           fulfillment: OrderMode.dineIn,
@@ -97,7 +104,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     Navigator.pop(context, normalized);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Table $normalized Dine-In activated!'),
+                        content: Text('Table $normalized ($targetBranch) Dine-In activated!'),
                         backgroundColor: AppleColors.primaryAccent,
                       ),
                     );
@@ -122,6 +129,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     style: GoogleFonts.inter(fontSize: 12, color: AppleColors.mutedText),
                   ),
                   onTap: () {
+                    context.read<OrderSessionProvider>().setBranch(targetBranch);
                     context.read<OrderSessionProvider>().startDineInFromTable(
                           normalized,
                           fulfillment: OrderMode.expressTakeout,
@@ -130,7 +138,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     Navigator.pop(context, normalized);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Table $normalized Express Takeout activated!'),
+                        content: Text('Table $normalized ($targetBranch) Express Takeout activated!'),
                         backgroundColor: const Color(0xFFE65100),
                       ),
                     );
@@ -154,8 +162,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       final uri = Uri.tryParse(raw);
       if (uri != null) {
         final table = extractTableFromUri(uri);
+        final branch = extractBranchFromUri(uri);
         if (table != null) {
-          _applyTable(table);
+          _applyTable(table, branchOverride: branch);
           return;
         }
       }
